@@ -26,6 +26,7 @@
       "ALT, Escape, exec, hyprlock"
       "$mod SHIFT, Escape, exec, power-menu"
       "$mod, P, pseudo,"
+      "$mod SHIFT, P, exec, pass-menu"
       "$mod, X, togglesplit,"
       "$mod, T, exec, toggle-oppacity"
       "$mod, E, exec, nemo"
