@@ -21,9 +21,10 @@
 
     "ghostty --gtk-single-instance=true --quit-after-last-window-closed=false --initial-window=false"
     
-    # Workspace 1: Telegram и Obsidian
-    "[workspace 1 silent] telegram"
+    # Workspace 1: Telegram и Obsidian (Telegram слева, Obsidian справа)
+    "[workspace 1 silent] Telegram"
     "[workspace 1 silent] obsidian"
+    "sleep 2 && hyprctl dispatch workspace 1 && hyprctl dispatch focuswindow Telegram && hyprctl dispatch movewindow l && hyprctl dispatch splitratio 0.5 exact && hyprctl dispatch focuswindow obsidian && hyprctl dispatch movewindow r && hyprctl dispatch splitratio 0.5 exact &"
     
     # Workspace 2: Браузер
     "[workspace 2 silent] zen-beta"

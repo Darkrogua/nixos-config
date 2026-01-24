@@ -26,6 +26,8 @@
       "match:title ^(Picture-in-Picture)$, pin on"
       "match:title ^(Picture-in-Picture)$, float on"
 
+      # Workspace 1: Telegram и Obsidian
+      "match:class ^(Telegram)$, workspace 1"
       "match:class ^(TelegramDesktop)$, workspace 1"
       "match:class ^(telegram-desktop)$, workspace 1"
       "match:class ^(obsidian)$, workspace 1"
@@ -63,6 +65,7 @@
     workspace = [
       "w[tv1], gapsout:0, gapsin:0"
       "f[1], gapsout:0, gapsin:0"
+      "1, gapsout:0, gapsin:0"
     ];
   };
 }
