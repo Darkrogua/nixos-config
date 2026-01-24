@@ -16,14 +16,19 @@
     gnome-calculator
 
     ## Utility
+    blueman
     dconf-editor
     gnome-disk-utility
     popsicle
     mission-center # GUI resources monitor
     zenity
+    
+    ## Base
+    telegram-desktop
 
-    ## Level editor
-    ldtk
-    tiled
+    ## Work
+    jetbrains.phpstorm
+    code-cursor
+    
   ];
 }

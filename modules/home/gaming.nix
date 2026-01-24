@@ -23,7 +23,7 @@
 
     ## Doom
     # gzdoom
-    crispy-doom
+    # crispy-doom
 
     ## Emulation
     sameboy

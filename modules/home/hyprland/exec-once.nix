@@ -2,8 +2,10 @@
 {
   wayland.windowManager.hyprland.settings.exec-once = [
     # "hash dbus-update-activation-environment 2>/dev/null"
-    "dbus-update-activation-environment --all --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
-    "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
+    # Важно для Wayland/Electron (Cursor): прокидываем ВСЁ окружение в dbus-activation и systemd --user,
+    # иначе переменные вроде NIXOS_OZONE_WL/ELECTRON_* могут не попадать в GUI приложения, запущенные из меню.
+    "dbus-update-activation-environment --systemd --all"
+    "systemctl --user import-environment --all"
 
     "hyprlock"
 

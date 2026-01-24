@@ -26,10 +26,24 @@
   environment.systemPackages = with pkgs; [
     wget
     git
+    ranger
   ];
 
-  time.timeZone = "Europe/Paris";
-  i18n.defaultLocale = "en_US.UTF-8";
+  time.timeZone = "Europe/Saratov";
+  i18n.defaultLocale = "ru_RU.UTF-8";
+  # Явно генерируем нужные локали (на случай если ru_RU не был доступен в окружении раньше)
+  i18n.supportedLocales = [
+    "ru_RU.UTF-8/UTF-8"
+    "en_US.UTF-8/UTF-8"
+  ];
+  # Чтобы даты/дни недели были по-русски, но при желании можно оставить остальные категории en_US
+  i18n.extraLocaleSettings = {
+    LC_TIME = "ru_RU.UTF-8";
+  };
+
+  # Важно для waybar clock.locale (и некоторых других GUI программ): чтобы glibc находил архив локалей на NixOS
+  environment.sessionVariables.LOCALE_ARCHIVE = "/run/current-system/sw/lib/locale/locale-archive";
+
   nixpkgs.config.allowUnfree = true;
   system.stateVersion = "26.05";
 }

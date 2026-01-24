@@ -3,9 +3,19 @@
   wayland.windowManager.hyprland.settings = {
     "$mod" = "SUPER";
 
+    # По nixos.wiki/Wayland: для Electron/Chromium приложений включаем Ozone Wayland через env.
+    # Это критично, если XWayland масштабирование отключено (xwayland.force_zero_scaling=true),
+    # иначе Electron apps (в т.ч. Cursor) могут выглядеть слишком мелкими на HiDPI.
+    env = [
+      "NIXOS_OZONE_WL,1"
+      # Доп. хинты (часто помогают Electron форкам)
+      "ELECTRON_OZONE_PLATFORM_HINT,wayland"
+      "OZONE_PLATFORM,wayland"
+    ];
+
     input = {
-      kb_layout = "us,fr";
-      kb_options = "grp:alt_caps_toggle";
+      kb_layout = "us,ru";
+      kb_options = "grp:caps_toggle";
 
       repeat_delay = 300;
       numlock_by_default = true;
@@ -54,8 +64,11 @@
     decoration = {
       rounding = 0;
 
+      active_opacity = 1.0;
+      inactive_opacity = 1.0;
+
       blur = {
-        enabled = true;
+        enabled = false;
 
         size = 3;
         noise = 0;

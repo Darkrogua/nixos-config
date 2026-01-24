@@ -8,6 +8,7 @@
         hide_cursor = true;
         ignore_empty_input = true;
         fractional_scaling = 0;
+        dpms_timeout = 180;  # Выключить экран через 3 минуты (180 секунд) бездействия
       };
 
       background = [

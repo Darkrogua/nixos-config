@@ -10,6 +10,12 @@
         libvdpau-va-gl
       ];
     };
+
+    # Bluetooth (для Sway/Waybar и управления гарнитурами/девайсами)
+    bluetooth = {
+      enable = true;
+      powerOnBoot = true;
+    };
   };
   hardware.enableRedistributableFirmware = true;
 }

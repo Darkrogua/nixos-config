@@ -5,8 +5,8 @@
 
     settings = {
       user = {
-        name = "Frost-Phoenix";
-        email = "67cyril6767@gmail.com";
+        name = "Artem Dmitrenko";
+        email = "darkrogua@gmail.com";
       };
 
       init.defaultBranch = "main";

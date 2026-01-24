@@ -19,7 +19,7 @@
 
       ##### Theme #####
       theme = "gruvbox";
-      background-opacity = 0.5;
+      background-opacity = 1.0;
       adjust-cursor-thickness = 1;
 
       selection-clear-on-copy = true;
@@ -53,9 +53,12 @@
       keybind = [
         "clear"
 
-        "ctrl+shift+a=select_all"
-        "ctrl+shift+c=copy_to_clipboard"
-        "ctrl+shift+v=paste_from_clipboard"
+        "ctrl+shift+a=select_all"        
+        "ctrl+shift+key_c=copy_to_clipboard"
+        "ctrl+shift+key_v=paste_from_clipboard"
+        
+        "ctrl+shift+с=copy_to_clipboard"
+        "ctrl+shift+м=paste_from_clipboard"
 
         "ctrl+shift+t=new_tab"
         "ctrl+shift+w=close_tab:this"

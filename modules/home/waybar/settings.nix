@@ -1,4 +1,4 @@
-{ host, ... }:
+{ host, lib, ... }:
 let
   custom = {
     font = "Maple Mono";
@@ -33,28 +33,71 @@ in
       "hyprland/workspaces"
       "tray"
     ];
-    modules-center = [ "clock" ];
-    modules-right = [
-      "cpu"
-      "memory"
-      (if (host == "desktop") then "disk" else "")
-      "pulseaudio"
-      "network"
-      "battery"
-      "hyprland/language"
-      "custom/notification"
-      "custom/power-menu"
+    modules-center = [
+      "clock"
+      "custom/separator"
+      "custom/media-prev"
+      "custom/media-play"
+      "custom/media-next"
     ];
+    # NB: избегаем пустых строк (иначе Waybar ругается "Unknown module" / "Item ''")
+    modules-right =
+      [
+        "cpu"
+        "memory"
+      ]
+      ++ (lib.optional (host == "desktop") "disk")
+      ++ [
+        "pulseaudio"
+        "network"
+        "battery"
+        "hyprland/language"
+        "custom/notification"
+        "custom/power-menu"
+      ];
     clock = {
       calendar = {
         format = {
           today = "<span color='#98971A'><b>{}</b></span>";
         };
       };
-      format = "  {:%H:%M}";
+      interval = 1;
+      # Пример: "пн 17 19:57"
+      # По мануалу waybar-clock(5): locale задаётся прямо тут, чтобы strftime (%a/%B) был на нужном языке
+      # и чтобы {calendar} корректно определял начало недели.
+      # Если clock пропадёт и в логах будет locale::facet...name not valid — значит локаль не сгенерирована.
+      # В Waybar часто требуется формат xx_YY.utf8 (см. issue #2694)
+      locale = "ru_RU.utf8";
+      # Важно (см. issue #2694): добавляем флаг L, иначе форматирование может оставаться в "C" локали
+      format = "{:L%a %d %H:%M}";
       tooltip = "true";
-      tooltip-format = "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>";
-      format-alt = "  {:%d/%m}";
+      tooltip-format = "<big>{:L%Y %B}</big>\n<tt><small>{calendar}</small></tt>";
+      # По клику (alt): "17 января" (без времени)
+      format-alt = "{:L%d %B}";
+    };
+
+    "custom/separator" = {
+      format = "·";
+      tooltip = false;
+    };
+
+    # Управление медиа (через playerctl)
+    "custom/media-prev" = {
+      format = "";
+      tooltip = false;
+      on-click = "playerctl previous";
+    };
+    "custom/media-play" = {
+      # Иконка меняется по состоянию плеера
+      exec = "sh -lc 's=$(playerctl status 2>/dev/null || echo \"Stopped\"); if [ \"$s\" = \"Playing\" ]; then echo \"\"; else echo \"\"; fi'";
+      interval = 1;
+      tooltip = false;
+      on-click = "playerctl play-pause";
+    };
+    "custom/media-next" = {
+      format = "";
+      tooltip = false;
+      on-click = "playerctl next";
     };
     "hyprland/workspaces" = {
       active-only = false;
@@ -62,16 +105,16 @@ in
       format = "{icon}";
       on-click = "activate";
       format-icons = {
-        "1" = "I";
-        "2" = "II";
-        "3" = "III";
-        "4" = "IV";
-        "5" = "V";
-        "6" = "VI";
-        "7" = "VII";
-        "8" = "VIII";
-        "9" = "IX";
-        "10" = "X";
+        "1" = "1";
+        "2" = "2";
+        "3" = "3";
+        "4" = "4";
+        "5" = "5";
+        "6" = "6";
+        "7" = "7";
+        "8" = "8";
+        "9" = "9";
+        "10" = "10";
         sort-by-number = true;
       };
       persistent-workspaces = {
@@ -118,11 +161,17 @@ in
         default = [ "<span foreground='${blue}'> </span>" ];
       };
       scroll-step = 2;
-      on-click = "pamixer -t";
-      on-click-right = "pavucontrol";
+      # ЛКМ: открываем выбор устройства/настройки звука (а не mute)
+      on-click = "pavucontrol";
+      # ПКМ: mute/unmute
+      on-click-right = "pamixer -t";
     };
+
     battery = {
-      format = "<span foreground='${yellow}'>{icon}</span> {capacity}%";
+      # Только иконка (без процентов)
+      format = "<span foreground='${yellow}'>{icon}</span>";
+      # Вертикальная иконка: поворачиваем модуль (встроенная опция Waybar)
+      rotate = 90;
       format-icons = [
         " "
         " "
@@ -130,9 +179,9 @@ in
         " "
         " "
       ];
-      format-charging = "<span foreground='${yellow}'> </span>{capacity}%";
-      format-full = "<span foreground='${yellow}'> </span>{capacity}%";
-      format-warning = "<span foreground='${yellow}'> </span>{capacity}%";
+      format-charging = "<span foreground='${yellow}'> </span>";
+      format-full = "<span foreground='${yellow}'> </span>";
+      format-warning = "<span foreground='${yellow}'> </span>";
       interval = 5;
       states = {
         warning = 20;
@@ -145,7 +194,7 @@ in
       tooltip = true;
       tooltip-format = "Keyboard layout";
       format = "<span foreground='#FABD2F'> </span> {}";
-      format-fr = "FR";
+      format-ru = "RU";
       format-en = "US";
       on-click = "hyprctl switchxkblayout at-translated-set-2-keyboard next";
     };
