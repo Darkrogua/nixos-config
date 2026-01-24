@@ -71,6 +71,7 @@
     mimeo
     openssl
     pamixer                           # pulseaudio command line mixer
+    pass                              # password manager
     playerctl                         # controller for media players
     poweralertd
     udiskie                           # Automounter for removable media

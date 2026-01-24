@@ -9,7 +9,7 @@
     gnupg.agent = {
       enable = true;
       enableSSHSupport = true;
-      # pinentryFlavor = "";
+      pinentryPackage = pkgs.pinentry-gnome3;  # Для Wayland используем gnome3, можно также pinentry-gtk2 или pinentry-qt
     };
 
     nix-ld.enable = true;

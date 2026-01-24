@@ -26,6 +26,12 @@
         identityFile = "~/.ssh/keys/github.com/id_ed25519";
         identitiesOnly = true;
       };
+
+      gitlab = {
+        host = "gitlab.com";
+        identityFile = "~/.ssh/keys/gitlab.com/id_ed25519";
+        identitiesOnly = true;
+      };
     };
   };
 
