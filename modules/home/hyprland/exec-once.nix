@@ -20,7 +20,12 @@
     "init-wallpaper &"
 
     "ghostty --gtk-single-instance=true --quit-after-last-window-closed=false --initial-window=false"
-    "[workspace 1 silent] zen-beta"
-    "[workspace 2 silent] ghostty"
+    
+    # Workspace 1: Telegram и Obsidian
+    "[workspace 1 silent] telegram"
+    "[workspace 1 silent] obsidian"
+    
+    # Workspace 2: Браузер
+    "[workspace 2 silent] zen-beta"
   ];
 }

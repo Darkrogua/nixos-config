@@ -26,7 +26,10 @@
       "match:title ^(Picture-in-Picture)$, pin on"
       "match:title ^(Picture-in-Picture)$, float on"
 
-      "match:class ^(zen-beta)$, workspace 1"
+      "match:class ^(TelegramDesktop)$, workspace 1"
+      "match:class ^(telegram-desktop)$, workspace 1"
+      "match:class ^(obsidian)$, workspace 1"
+      "match:class ^(zen-beta)$, workspace 2"
       "match:class ^(Gimp-2.10)$, workspace 4"
       "match:class ^(Aseprite)$, workspace 4"
       "match:class ^(Audacious)$, workspace 5"
