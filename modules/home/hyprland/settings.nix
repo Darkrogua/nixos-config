@@ -49,6 +49,7 @@
       middle_click_paste = false;
 
       disable_autoreload = true;
+      allow_session_lock_restore = true;  # Автоматически восстанавливать блокировку после пробуждения
     };
 
     dwindle = {

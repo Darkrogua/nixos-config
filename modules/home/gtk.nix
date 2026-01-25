@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, username, ... }:
 {
   fonts.fontconfig.enable = true;
   home.packages = with pkgs; [
@@ -12,6 +12,10 @@
     maple-mono-custom
   ];
 
+  # Установка пользовательских шрифтов из папки .fonts
+  # Fontconfig автоматически сканирует ~/.fonts, поэтому просто создайте папку
+  # и поместите туда шрифты - они будут доступны во всех приложениях
+  
   gtk = {
     enable = true;
     font = {
