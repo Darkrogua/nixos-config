@@ -1,4 +1,4 @@
-{ pkgs, username, ... }:
+{ pkgs, ... }:
 {
   fonts.fontconfig.enable = true;
   home.packages = with pkgs; [
@@ -8,19 +8,17 @@
     nerd-fonts.symbols-only
     twemoji-color-font
     noto-fonts-color-emoji
+    noto-fonts
     fantasque-sans-mono
     maple-mono-custom
   ];
 
-  # Установка пользовательских шрифтов из папки .fonts
-  # Fontconfig автоматически сканирует ~/.fonts, поэтому просто создайте папку
-  # и поместите туда шрифты - они будут доступны во всех приложениях
-  
+  # Установка пользовательских шрифтов из папки ~/.local/share/fonts
   gtk = {
     enable = true;
     font = {
-      name = "Maple Mono";
-      size = 12;
+      name = "Noto Sans";
+      size = 11;
     };
     theme = {
       name = "Colloid-Green-Dark-Gruvbox";

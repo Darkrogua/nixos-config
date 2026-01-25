@@ -1,4 +1,4 @@
-{ host, lib, ... }:
+{ host, lib, pkgs, ... }:
 let
   custom = {
     font = "Maple Mono";
@@ -43,6 +43,7 @@ in
     # NB: избегаем пустых строк (иначе Waybar ругается "Unknown module" / "Item ''")
     modules-right =
       [
+        "custom/temperature"
         "cpu"
         "memory"
       ]
@@ -50,7 +51,7 @@ in
       ++ [
         "pulseaudio"
         "network"
-        "battery"
+        # "battery"  # Закомментировано: не нужен на десктопе
         "hyprland/language"
         "custom/notification"
         "custom/power-menu"
@@ -117,13 +118,16 @@ in
         "10" = "10";
         sort-by-number = true;
       };
+  
       persistent-workspaces = {
         "1" = [ ];
-        "2" = [ ];
-        "3" = [ ];
-        "4" = [ ];
-        "5" = [ ];
+
       };
+    };
+    "custom/temperature" = {
+      exec = "${pkgs.writeShellScript "waybar-temperature-tooltip" (builtins.readFile ../../../scripts/scripts/waybar-temperature-tooltip.sh)}";
+      interval = 2;
+      return-type = "json";
     };
     cpu = {
       format = "<span foreground='${green}'> </span> {usage}%";
@@ -132,8 +136,8 @@ in
       on-click-right = "hyprctl dispatch exec '[float; center; size 950 650] kitty --override font_size=14 --title float_kitty btop'";
     };
     memory = {
-      format = "<span foreground='${cyan}'>󰟜 </span>{}%";
-      format-alt = "<span foreground='${cyan}'>󰟜 </span>{used} GiB"; # 
+      format = "<span foreground='${cyan}'>󰟜 </span>{used} GiB";
+      format-alt = "<span foreground='${cyan}'>󰟜 </span>{}%";
       interval = 2;
       on-click-right = "hyprctl dispatch exec '[float; center; size 950 650] kitty --override font_size=14 --title float_kitty btop'";
     };
@@ -167,29 +171,29 @@ in
       on-click-right = "pamixer -t";
     };
 
-    battery = {
-      # Только иконка (без процентов)
-      format = "<span foreground='${yellow}'>{icon}</span>";
-      # Вертикальная иконка: поворачиваем модуль (встроенная опция Waybar)
-      rotate = 90;
-      format-icons = [
-        " "
-        " "
-        " "
-        " "
-        " "
-      ];
-      format-charging = "<span foreground='${yellow}'> </span>";
-      format-full = "<span foreground='${yellow}'> </span>";
-      format-warning = "<span foreground='${yellow}'> </span>";
-      interval = 5;
-      states = {
-        warning = 20;
-      };
-      format-time = "{H}h{M}m";
-      tooltip = true;
-      tooltip-format = "{time}";
-    };
+    # battery = {
+    #   # Только иконка (без процентов)
+    #   format = "<span foreground='${yellow}'>{icon}</span>";
+    #   # Вертикальная иконка: поворачиваем модуль (встроенная опция Waybar)
+    #   rotate = 90;
+    #   format-icons = [
+    #     " "
+    #     " "
+    #     " "
+    #     " "
+    #     " "
+    #   ];
+    #   format-charging = "<span foreground='${yellow}'> </span>";
+    #   format-full = "<span foreground='${yellow}'> </span>";
+    #   format-warning = "<span foreground='${yellow}'> </span>";
+    #   interval = 5;
+    #   states = {
+    #     warning = 20;
+    #   };
+    #   format-time = "{H}h{M}m";
+    #   tooltip = true;
+    #   tooltip-format = "{time}";
+    # };
     "hyprland/language" = {
       tooltip = true;
       tooltip-format = "Keyboard layout";
