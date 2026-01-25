@@ -7,8 +7,8 @@
     SSH_AUTH_SOCK = "/run/user/1000/ssh-agent";
     DISABLE_QT5_COMPAT = 0;
     GDK_BACKEND = "wayland";
-    GDK_SCALE = "1.7";  # Масштаб для GTK приложений
-    ELECTRON_SCALE_FACTOR = "1.8";  # Масштаб для Electron приложений (Cursor, VS Code и т.д.)
+    GDK_SCALE = "1.5";  # Масштаб для GTK приложений
+    ELECTRON_SCALE_FACTOR = "1.5";  # Масштаб для Electron приложений (Cursor, VS Code и т.д.)
     ANKI_WAYLAND = 1;
     DIRENV_LOG_FORMAT = "";
     WLR_DRM_NO_ATOMIC = 1;
