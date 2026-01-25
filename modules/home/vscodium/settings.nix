@@ -8,7 +8,9 @@
 
       "window.menuBarVisibility" = "toggle";
       "editor.fontFamily" = "'Maple Mono', 'SymbolsNerdFont', 'monospace', monospace";
-      "terminal.integrated.fontFamily" = "'Maple Mono', 'SymbolsNerdFont'";
+      "terminal.integrated.fontFamily" = "'Maple Mono', 'SymbolsNerdFont', 'DejaVu Sans Mono', 'monospace'";
+      "terminal.integrated.fontSize" = 14;
+      "terminal.integrated.fontWeight" = "normal";
       "editor.fontSize" = 18;
       "workbench.colorTheme" = "Gruvbox Dark Hard";
       "workbench.iconTheme" = "gruvbox-material-icon-theme";

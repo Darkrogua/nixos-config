@@ -8,6 +8,13 @@
       "8.8.4.4"
       "1.1.1.1"
     ];
+    
+    # Добавление записей в /etc/hosts
+    hosts = {
+      "127.0.0.1" = [ "localhost" "adminer.dc" "ktng.dc" ];
+      "::1" = [ "localhost" ];
+    };
+    
     firewall = {
       enable = true;
       allowedTCPPorts = [

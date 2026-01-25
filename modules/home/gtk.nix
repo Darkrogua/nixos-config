@@ -17,8 +17,8 @@
   gtk = {
     enable = true;
     font = {
-      name = "Noto Sans";
-      size = 11;
+      name = ".SF NS";
+      size = 15;
     };
     theme = {
       name = "Colloid-Green-Dark-Gruvbox";

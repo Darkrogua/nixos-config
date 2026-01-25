@@ -74,6 +74,8 @@
     pass                              # password manager
     playerctl                         # controller for media players
     poweralertd
+    swayidle                          # idle management daemon for Wayland
+    sshpass                           # non-interactive SSH password authentication
     udiskie                           # Automounter for removable media
     unzip
     wget

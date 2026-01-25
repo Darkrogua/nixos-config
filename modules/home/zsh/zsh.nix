@@ -125,6 +125,9 @@
       DISABLE_MAGIC_FUNCTIONS=true
       export "MICRO_TRUECOLOR=1"
 
+      # Добавляем ~/bin в PATH
+      export PATH="$HOME/bin:$PATH"
+
       setopt sharehistory
       setopt hist_ignore_space
       setopt hist_ignore_all_dups

@@ -27,6 +27,7 @@
     telegram-desktop
 
     ## Work
+    insomnia                          # REST API client
     jetbrains.phpstorm
     code-cursor
     
