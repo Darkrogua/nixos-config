@@ -69,7 +69,11 @@ in
 
     #tray {
       margin-left: 10px;
+      margin-right: 5px;
       color: ${text_color};
+    }
+    #tray > * {
+      margin-right: 4px;
     }
     #tray menu {
       background: ${background_1};
@@ -80,8 +84,7 @@ in
       padding: 1px;
     }
 
-    #pulseaudio, #network, #bluetooth, #memory, #disk, #battery, #language, #custom-notification, #custom-power-menu,
-    #custom-media-prev, #custom-media-play, #custom-media-next, #custom-separator {
+    #pulseaudio, #network, #bluetooth, #memory, #disk, #battery, #language, #custom-notification, #custom-power-menu {
       padding-left: 5px;
       padding-right: 5px;
       margin-right: 10px;

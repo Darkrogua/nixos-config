@@ -35,10 +35,6 @@ in
     ];
     modules-center = [
       "clock"
-      "custom/separator"
-      "custom/media-prev"
-      "custom/media-play"
-      "custom/media-next"
     ];
     # NB: избегаем пустых строк (иначе Waybar ругается "Unknown module" / "Item ''")
     modules-right =
@@ -77,29 +73,6 @@ in
       format-alt = "{:L%d %B}";
     };
 
-    "custom/separator" = {
-      format = "·";
-      tooltip = false;
-    };
-
-    # Управление медиа (через playerctl)
-    "custom/media-prev" = {
-      format = "";
-      tooltip = false;
-      on-click = "playerctl previous";
-    };
-    "custom/media-play" = {
-      # Иконка меняется по состоянию плеера
-      exec = "sh -lc 's=$(playerctl status 2>/dev/null || echo \"Stopped\"); if [ \"$s\" = \"Playing\" ]; then echo \"\"; else echo \"\"; fi'";
-      interval = 1;
-      tooltip = false;
-      on-click = "playerctl play-pause";
-    };
-    "custom/media-next" = {
-      format = "";
-      tooltip = false;
-      on-click = "playerctl next";
-    };
     "hyprland/workspaces" = {
       active-only = false;
       disable-scroll = true;
@@ -156,7 +129,7 @@ in
     };
     tray = {
       icon-size = 20;
-      spacing = 8;
+      spacing = 12;
     };
     pulseaudio = {
       format = "{icon} {volume}%";
