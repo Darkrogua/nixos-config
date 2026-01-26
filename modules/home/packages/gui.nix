@@ -28,6 +28,7 @@
 
     ## Work
     insomnia                          # REST API client
+    postman                           # REST API client
     jetbrains.phpstorm
     code-cursor
     

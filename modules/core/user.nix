@@ -31,6 +31,7 @@
     extraGroups = [
       "networkmanager"
       "wheel"
+      "dialout"  # Для доступа к /dev/ttyACM0 (AOOSTAR display control)
     ];
     shell = pkgs.zsh;
   };
