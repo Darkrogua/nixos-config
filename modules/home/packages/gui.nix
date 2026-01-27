@@ -28,7 +28,7 @@
 
     ## Work
     insomnia                          # REST API client
-    postman                           # REST API client
+    # postman управляется через modules/home/postman.nix с настройками Wayland
     jetbrains.phpstorm
     code-cursor
     

@@ -23,6 +23,7 @@
     ./nvim.nix                        # neovim editor
     ./obsidian.nix
     ./p10k/p10k.nix
+    ./postman.nix                    # REST API client
     ./packages                        # other packages
     ./retroarch.nix  
     ./rofi/rofi.nix                   # launcher
