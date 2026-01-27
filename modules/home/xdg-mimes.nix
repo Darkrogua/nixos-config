@@ -12,6 +12,7 @@ let
     terminal = [ "ghostty.desktop" ];
     archive = [ "org.gnome.FileRoller.desktop" ];
     discord = [ "webcord.desktop" ];
+    insomnia = [ "insomnia.desktop" ];
   };
 
   mimeMap = {
@@ -68,6 +69,7 @@ let
       "application/*tar"
     ];
     discord = [ "x-scheme-handler/discord" ];
+    insomnia = [ "x-scheme-handler/insomnia" ];
   };
 
   associations =

@@ -26,8 +26,11 @@
     ## Base
     telegram-desktop
 
+    ## Browser
+    google-chrome                    # Google Chrome browser
+
     ## Work
-    insomnia                          # REST API client
+    insomnia
     # postman управляется через modules/home/postman.nix с настройками Wayland
     jetbrains.phpstorm
     code-cursor

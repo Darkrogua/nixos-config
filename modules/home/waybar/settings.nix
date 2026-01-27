@@ -106,19 +106,19 @@ in
       format = "<span foreground='${green}'> </span> {usage}%";
       format-alt = "<span foreground='${green}'> </span> {avg_frequency} GHz";
       interval = 2;
-      on-click-right = "hyprctl dispatch exec '[float; center; size 950 650] kitty --override font_size=14 --title float_kitty btop'";
+      on-click-right = "hyprctl dispatch exec '[float; center; size 1900 1300] kitty --override font_size=14 --title float_kitty btop'";
     };
     memory = {
       format = "<span foreground='${cyan}'>󰟜 </span>{used} GiB";
       format-alt = "<span foreground='${cyan}'>󰟜 </span>{}%";
       interval = 2;
-      on-click-right = "hyprctl dispatch exec '[float; center; size 950 650] kitty --override font_size=14 --title float_kitty btop'";
+      on-click-right = "hyprctl dispatch exec '[float; center; size 1900 1300] kitty --override font_size=14 --title float_kitty btop'";
     };
     disk = {
       # path = "/";
       format = "<span foreground='${orange}'>󰋊 </span>{percentage_used}%";
       interval = 60;
-      on-click-right = "hyprctl dispatch exec '[float; center; size 950 650] kitty --override font_size=14 --title float_kitty btop'";
+      on-click-right = "hyprctl dispatch exec '[float; center; size 1900 1300] kitty --override font_size=14 --title float_kitty btop'";
     };
     network = {
       format-wifi = "<span foreground='${magenta}'> </span> {signalStrength}%";
@@ -138,10 +138,10 @@ in
         default = [ "<span foreground='${blue}'> </span>" ];
       };
       scroll-step = 2;
-      # ЛКМ: открываем выбор устройства/настройки звука (а не mute)
-      on-click = "pavucontrol";
-      # ПКМ: mute/unmute
-      on-click-right = "pamixer -t";
+      # ЛКМ: mute/unmute
+      on-click = "pamixer -t";
+      # ПКМ: открываем выбор устройства/настройки звука в увеличенном окне
+      on-click-right = "hyprctl dispatch exec '[float; center; size 1600 1200] pavucontrol'";
     };
 
     # battery = {
