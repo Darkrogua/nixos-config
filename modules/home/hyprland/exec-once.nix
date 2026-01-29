@@ -7,10 +7,10 @@
     "dbus-update-activation-environment --systemd --all"
     "systemctl --user import-environment --all"
 
-    # Автоматическая блокировка экрана через 5 минут бездействия
-    # timeout 300 = блокировка через 5 минут (300 секунд)
+    # Автоматическая блокировка экрана и ожидание через 15 минут бездействия
+    # timeout 900 = 15 минут (900 секунд)
     # before-sleep = блокировка перед уходом в сон
-    "swayidle -w timeout 300 'hyprlock' before-sleep 'hyprlock' &"
+    "swayidle -w timeout 900 'hyprlock & sleep 2; systemctl suspend' before-sleep 'hyprlock' &"
 
     "nm-applet &"
     "poweralertd &"

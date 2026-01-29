@@ -169,7 +169,7 @@ in
     # };
     "hyprland/language" = {
       tooltip = true;
-      tooltip-format = "Keyboard layout";
+      tooltip-format = "Раскладка";
       format = "<span foreground='#FABD2F'> </span> {}";
       format-ru = "RU";
       format-en = "US";
@@ -184,7 +184,7 @@ in
     };
     "custom/notification" = {
       tooltip = true;
-      tooltip-format = "Notifications";
+      tooltip-format = "Уведомления";
       format = "{icon}";
       format-icons = {
         notification = "<span foreground='red'><sup></sup></span>";

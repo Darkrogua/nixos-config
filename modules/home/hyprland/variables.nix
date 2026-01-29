@@ -1,6 +1,10 @@
 { ... }:
 {
   home.sessionVariables = {
+    LANG = "ru_RU.UTF-8";
+    LC_ALL = "ru_RU.UTF-8";
+    LC_TIME = "ru_RU.UTF-8";
+    LC_MESSAGES = "ru_RU.UTF-8";
     NIXOS_OZONE_WL = 1;
     __GL_GSYNC_ALLOWED = 0;
     __GL_VRR_ALLOWED = 0;

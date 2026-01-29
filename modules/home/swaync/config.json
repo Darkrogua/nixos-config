@@ -31,7 +31,7 @@
   "transition-time": 200,
   "hide-on-clear": false,
   "hide-on-action": true,
-  "text-empty": "No Notifications",
+  "text-empty": "Нет уведомлений",
   "script-fail-notify": true,
   "widgets": [
     "dnd",
@@ -42,17 +42,17 @@
   ],
   "widget-config": {
     "inhibitors": {
-      "text": "Inhibitors",
-      "button-text": "Clear All",
+      "text": "Блокировщики",
+      "button-text": "Очистить всё",
       "clear-all-button": true
     },
     "title": {
-      "text": "Notifications",
+      "text": "Уведомления",
       "clear-all-button": true,
-      "button-text": "Clear All"
+      "button-text": "Очистить всё"
     },
     "dnd": {
-      "text": "Do Not Disturb"
+      "text": "Не беспокоить"
     },
     "label": {
       "max-lines": 5,

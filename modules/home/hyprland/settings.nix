@@ -45,7 +45,7 @@
       disable_hyprland_logo = true;
       disable_splash_rendering = false;
 
-      focus_on_activate = true;
+      focus_on_activate = false;
       middle_click_paste = false;
 
       disable_autoreload = true;
