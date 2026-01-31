@@ -11,14 +11,14 @@
       before_sleep_cmd = hyprlock
     }
 
-    # After 1 minute of inactivity: turn monitors off (DPMS)
+    # После 5 минут (60*5 = 300) выключаем экран
     listener {
-      timeout = 60
+      timeout = 300
       on-timeout = hyprctl dispatch dpms off
       on-resume = hyprctl dispatch dpms on
     }
 
-    # After 15 minutes of inactivity: lock and suspend
+    # После 15 минут уходим в сон 
     listener {
       timeout = 900
       on-timeout = hyprlock & sleep 2; systemctl suspend

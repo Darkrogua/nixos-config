@@ -53,7 +53,8 @@
       "$mod, h, movefocus, l"
       "$mod, j, movefocus, d"
       "$mod, k, movefocus, u"
-      "$mod, l, movefocus, r"
+      # lock screen (layout-independent: physical L key)
+      "$mod, code:46, exec, hyprlock"
 
       "$mod, left,  alterzorder, top"
       "$mod, right, alterzorder, top"
@@ -62,7 +63,6 @@
       "$mod, h, alterzorder, top"
       "$mod, j, alterzorder, top"
       "$mod, k, alterzorder, top"
-      "$mod, l, alterzorder, top"
 
       "CTRL ALT, up, exec, hyprctl dispatch focuswindow floating"
       "CTRL ALT, down, exec, hyprctl dispatch focuswindow tiled"

@@ -7,7 +7,7 @@ configuration {
 
 window {
     /* properties for window widget */
-    width:                       500px;
+    width:                       600px;
     location:                    center;
     anchor:                      center;
 
@@ -37,7 +37,7 @@ listview {
     enabled:                     true;
 
     lines:                       1;
-    columns:                     5;
+    columns:                     6;
     
     cycle:                       true;
     dynamic:                     true;

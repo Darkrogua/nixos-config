@@ -11,7 +11,7 @@
     
     # Добавление записей в /etc/hosts
     hosts = {
-      "127.0.0.1" = [ "localhost" "adminer.dc" "ktng.dc" ];
+      "127.0.0.1" = [ "localhost" "adminer.dc" "ktng.dc" "babylon.dc" "faces.dc" ];
       "::1" = [ "localhost" ];
     };
     

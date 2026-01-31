@@ -7,10 +7,7 @@
     "dbus-update-activation-environment --systemd --all"
     "systemctl --user import-environment --all"
 
-    # Автоматическая блокировка экрана и ожидание через 15 минут бездействия
-    # timeout 900 = 15 минут (900 секунд)
-    # before-sleep = блокировка перед уходом в сон
-    "swayidle -w timeout 900 'hyprlock & sleep 2; systemctl suspend' before-sleep 'hyprlock' &"
+    # Idle handled by hypridle (see ./hypridle.nix)
 
     "nm-applet &"
     "poweralertd &"
@@ -21,6 +18,8 @@
     "udiskie --automount --notify --smart-tray &"
     "hyprctl setcursor Bibata-Modern-Ice 24 &"
     "init-wallpaper &"
+    # Папки с датами в ~/Documents: создать сегодняшнюю и почистить старые (см. modules/home/documents-date-dirs.nix)
+    "documents-date-dirs &"
 
     "ghostty --gtk-single-instance=true --quit-after-last-window-closed=false --initial-window=false"
     
