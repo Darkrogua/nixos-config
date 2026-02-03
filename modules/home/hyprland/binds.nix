@@ -53,8 +53,8 @@
       "$mod, h, movefocus, l"
       "$mod, j, movefocus, d"
       "$mod, k, movefocus, u"
-      # lock screen (layout-independent: physical L key)
-      "$mod, code:46, exec, hyprlock"
+      # lock screen (layout-independent: physical L key) — как в waybar power-menu: sleep затем hyprlock
+      "$mod, code:46, exec, sh -c 'sleep 0.1 && hyprlock'"
 
       "$mod, left,  alterzorder, top"
       "$mod, right, alterzorder, top"
