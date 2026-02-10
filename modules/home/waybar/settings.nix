@@ -45,7 +45,7 @@ in
       ]
       ++ (lib.optional (host == "desktop") "disk")
       ++ [
-        "custom/volume"
+        "pulseaudio"
         "network"
         # "battery"  # Закомментировано: не нужен на десктопе
         "hyprland/language"
@@ -131,45 +131,17 @@ in
       icon-size = 20;
       spacing = 12;
     };
-    "custom/volume" = {
-      # Общий системный уровень громкости: просто число и иконка.
-      # Скрипт завернут в pkgs.writeShellScript, чтобы Waybar знал точный путь.
-      exec = "${
-          pkgs.writeShellScript "waybar-volume" ''
-            #!/usr/bin/env bash
-
-            volume="$(pamixer --get-volume 2>/dev/null)"
-            muted="$(pamixer --get-mute 2>/dev/null)"
-
-            if [ -z "$volume" ]; then
-              echo '{"text": " N/A", "tooltip": "pamixer недоступен", "class": "error"}'
-              exit 0
-            fi
-
-            if [ "$muted" = "true" ]; then
-              icon=""
-              class="muted"
-            else
-              icon=""
-              class="normal"
-            fi
-
-            # Вывод: ИКОНКА пробел ЧИСЛО, без процентов.
-            printf '{"text":"%s %s","tooltip":"Громкость: %s","class":"%s"}\n' \
-              "$icon" "$volume" "$volume" "$class"
-          ''
-        }";
-      interval = 1;
-      return-type = "json";
-
-      # Скролл: общий ползунок для default sink, БЕЗ буста >100.
-      on-scroll-up = "pamixer -i 2";
-      on-scroll-down = "pamixer -d 2";
-
-      # ЛКМ: просто переключаем default sink на следующий (PipeWire).
+    pulseaudio = {
+      # Показываем только иконку и число без процента.
+      format = "{icon} {volume}";
+      format-muted = "<span foreground='${blue}'> </span> {volume}";
+      format-icons = {
+        default = [ "<span foreground='${blue}'> </span>" ];
+      };
+      scroll-step = 2;
+      # ЛКМ: переключаем устройство вывода (default sink) по кругу.
       on-click = "next-audio-sink";
-
-      # ПКМ: как раньше — открыть большой микшер pavucontrol.
+      # ПКМ: открываем выбор устройства/настройки звука в увеличенном окне.
       on-click-right =
         "hyprctl dispatch exec '[float; center; size 1600 1200] pavucontrol'";
     };
