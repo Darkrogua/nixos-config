@@ -132,23 +132,44 @@ in
       spacing = 12;
     };
     "custom/volume" = {
-      # Берём скрипт из репо и заворачиваем в pkgs.writeShellScript,
-      # чтобы Waybar всегда знал точный путь в /nix/store.
+      # Общий системный уровень громкости: просто число и иконка.
+      # Скрипт завернут в pkgs.writeShellScript, чтобы Waybar знал точный путь.
       exec = "${
-          pkgs.writeShellScript "waybar-volume"
-          (builtins.readFile ../../../scripts/scripts/waybar-volume.sh)
+          pkgs.writeShellScript "waybar-volume" ''
+            #!/usr/bin/env bash
+
+            volume="$(pamixer --get-volume 2>/dev/null)"
+            muted="$(pamixer --get-mute 2>/dev/null)"
+
+            if [ -z "$volume" ]; then
+              echo '{"text": " N/A", "tooltip": "pamixer недоступен", "class": "error"}'
+              exit 0
+            fi
+
+            if [ "$muted" = "true" ]; then
+              icon=""
+              class="muted"
+            else
+              icon=""
+              class="normal"
+            fi
+
+            # Вывод: ИКОНКА пробел ЧИСЛО, без процентов.
+            printf '{"text":"%s %s","tooltip":"Громкость: %s","class":"%s"}\n' \
+              "$icon" "$volume" "$volume" "$class"
+          ''
         }";
       interval = 1;
       return-type = "json";
 
-      # Скролл: общий ползунок для default sink (PipeWire/Pulse)
-      on-scroll-up = "pamixer --allow-boost -i 2";
-      on-scroll-down = "pamixer --allow-boost -d 2";
+      # Скролл: общий ползунок для default sink, БЕЗ буста >100.
+      on-scroll-up = "pamixer -i 2";
+      on-scroll-down = "pamixer -d 2";
 
-      # ЛКМ: mute/unmute
-      on-click = "pamixer -t";
+      # ЛКМ: просто переключаем default sink на следующий (PipeWire).
+      on-click = "next-audio-sink";
 
-      # ПКМ: открыть выбор устройства / микшеры
+      # ПКМ: как раньше — открыть большой микшер pavucontrol.
       on-click-right =
         "hyprctl dispatch exec '[float; center; size 1600 1200] pavucontrol'";
     };
