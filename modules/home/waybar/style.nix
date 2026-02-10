@@ -84,7 +84,7 @@ in
       padding: 1px;
     }
 
-    #pulseaudio, #network, #bluetooth, #memory, #disk, #battery, #language, #custom-notification, #custom-power-menu {
+    #pulseaudio, #network, #bluetooth, #memory, #disk, #battery, #language, #custom-notification, #custom-power-menu, #custom-volume {
       padding-left: 5px;
       padding-right: 5px;
       margin-right: 10px;
@@ -114,7 +114,7 @@ in
       color: ${border_color};
     }
     
-    #pulseaudio, #language, #custom-notification {
+    #pulseaudio, #language, #custom-notification, #custom-volume {
       margin-left: 15px;
     }
 

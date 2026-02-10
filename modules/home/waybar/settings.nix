@@ -45,7 +45,7 @@ in
       ]
       ++ (lib.optional (host == "desktop") "disk")
       ++ [
-        "pulseaudio"
+        "custom/volume"
         "network"
         # "battery"  # Закомментировано: не нужен на десктопе
         "hyprland/language"
@@ -131,17 +131,26 @@ in
       icon-size = 20;
       spacing = 12;
     };
-    pulseaudio = {
-      format = "{icon} {volume}%";
-      format-muted = "<span foreground='${blue}'> </span> {volume}%";
-      format-icons = {
-        default = [ "<span foreground='${blue}'> </span>" ];
-      };
-      scroll-step = 2;
+    "custom/volume" = {
+      # Берём скрипт из репо и заворачиваем в pkgs.writeShellScript,
+      # чтобы Waybar всегда знал точный путь в /nix/store.
+      exec = "${
+          pkgs.writeShellScript "waybar-volume"
+          (builtins.readFile ../../../scripts/scripts/waybar-volume.sh)
+        }";
+      interval = 1;
+      return-type = "json";
+
+      # Скролл: общий ползунок для default sink (PipeWire/Pulse)
+      on-scroll-up = "pamixer --allow-boost -i 2";
+      on-scroll-down = "pamixer --allow-boost -d 2";
+
       # ЛКМ: mute/unmute
       on-click = "pamixer -t";
-      # ПКМ: открываем выбор устройства/настройки звука в увеличенном окне
-      on-click-right = "hyprctl dispatch exec '[float; center; size 1600 1200] pavucontrol'";
+
+      # ПКМ: открыть выбор устройства / микшеры
+      on-click-right =
+        "hyprctl dispatch exec '[float; center; size 1600 1200] pavucontrol'";
     };
 
     # battery = {
