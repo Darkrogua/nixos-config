@@ -93,8 +93,8 @@
       RestrictAddressFamilies = "none";
       SystemCallFilter = [ "@system-service" "~@privileged" "~@resources" ];
       SystemCallErrorNumber = "EPERM";
-      # Доступ только к /dev/ttyACM0 для управления экраном
-      DeviceAllow = "/dev/ttyACM0 rw";
+      # Доступ к /dev/ttyACM0 и /dev/ttyACM1 — номер зависит от порядка USB-подключений
+      DeviceAllow = [ "/dev/ttyACM0 rw" "/dev/ttyACM1 rw" ];
     };
   };
 
