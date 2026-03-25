@@ -8,7 +8,7 @@
   xdg.configFile."hypr/hypridle.conf".text = ''
     general {
       # Safety: lock screen before suspend triggered elsewhere
-      before_sleep_cmd = hyprlock
+      before_sleep_cmd = pgrep -x hyprlock > /dev/null || hyprlock
     }
 
     # После 5 минут (60*5 = 300) выключаем экран
@@ -21,7 +21,7 @@
     # После 15 минут уходим в сон 
     listener {
       timeout = 900
-      on-timeout = hyprlock & sleep 2; systemctl suspend
+      on-timeout = pgrep -x hyprlock > /dev/null || hyprlock & sleep 2; systemctl suspend
     }
   '';
 

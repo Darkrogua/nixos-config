@@ -1,7 +1,11 @@
 { pkgs, ... }:
 {
+  # Фоновая служба для GUI AmneziaVPN (без неё — ErrorCode 103)
+  programs.amnezia-vpn.enable = true;
+
   services = {
     gvfs.enable = true;
+    fprintd.enable = true;
 
     # GUI менеджер Bluetooth (blueman-manager), полезен для Sway/Wayland
     blueman.enable = true;

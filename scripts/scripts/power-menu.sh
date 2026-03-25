@@ -45,7 +45,7 @@ run_cmd() {
         elif [[ $1 == '--reboot' ]]; then
             systemctl reboot
         elif [[ $1 == '--suspend' ]]; then
-            hyprlock &
+            pgrep -x hyprlock > /dev/null || hyprlock &
             systemctl suspend
         elif [[ $1 == '--logout' ]]; then
             if command -v hyprctl >/dev/null 2>&1; then
@@ -69,7 +69,7 @@ case ${chosen} in
         ;;
     $lock)
         sleep 0.1
-        hyprlock
+        pgrep -x hyprlock > /dev/null || hyprlock
         ;;
     $suspend)
         sleep 0.1

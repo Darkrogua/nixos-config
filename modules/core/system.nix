@@ -23,10 +23,17 @@
     };
   };
 
+  # Android Debug Bridge (adb) для отладки/прошивки с устройств.
+  # Обычно сам модуль также добавляет нужные udev-правила и пакет `android-tools`.
+  programs.adb.enable = true;
+
   environment.systemPackages = with pkgs; [
     wget
     git
     ranger
+    usbutils
+    libinput
+    fprintd
   ];
 
   time.timeZone = "Europe/Saratov";

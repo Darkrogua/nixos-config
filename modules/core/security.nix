@@ -5,8 +5,8 @@
     sudo.enable = true;
 
     pam.services = {
-      swaylock = { };
-      hyprlock = { };
+      swaylock.fprintAuth = true;
+      hyprlock.fprintAuth = true;
     };
   };
 }

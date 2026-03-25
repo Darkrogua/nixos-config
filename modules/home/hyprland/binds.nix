@@ -23,7 +23,7 @@
       "$mod SHIFT, D, exec, vesktop --enable-features=UseOzonePlatform --ozone-platform=wayland"
       "$mod SHIFT, S, exec, hyprctl dispatch exec '[workspace 5 silent] SoundWireServer'"
       "$mod, Escape, exec, swaylock"
-      "ALT, Escape, exec, hyprlock"
+      "ALT, Escape, exec, pgrep -x hyprlock > /dev/null || hyprlock"
       "$mod SHIFT, Escape, exec, power-menu"
       "$mod, P, pseudo,"
       "$mod SHIFT, P, exec, pass-menu"
@@ -54,7 +54,7 @@
       "$mod, j, movefocus, d"
       "$mod, k, movefocus, u"
       # сон (Mod+L) — как «Сон» в waybar: блокировка и suspend
-      "$mod, code:46, exec, sh -c 'hyprlock & sleep 2; systemctl suspend'"
+      "$mod, code:46, exec, sh -c 'pgrep -x hyprlock > /dev/null || hyprlock & sleep 2; systemctl suspend'"
 
       "$mod, left,  alterzorder, top"
       "$mod, right, alterzorder, top"

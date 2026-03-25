@@ -26,7 +26,7 @@
     };
     Service = {
       Type = "oneshot";
-      ExecStart = "${pkgs.hyprlock}/bin/hyprlock";
+      ExecStart = "${pkgs.procps}/bin/pgrep -x hyprlock > /dev/null || ${pkgs.hyprlock}/bin/hyprlock";
       RemainAfterExit = false;
     };
     Install = {
