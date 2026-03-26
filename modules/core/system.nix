@@ -24,10 +24,11 @@
   };
 
   # Android Debug Bridge (adb) для отладки/прошивки с устройств.
-  # Обычно сам модуль также добавляет нужные udev-правила и пакет `android-tools`.
-  programs.adb.enable = true;
+  # В текущей версии NixOS опция `programs.adb` может быть бесполезной,
+  # поэтому просто ставим пакет с `adb`.
 
   environment.systemPackages = with pkgs; [
+    android-tools # adb/fastboot
     wget
     git
     ranger

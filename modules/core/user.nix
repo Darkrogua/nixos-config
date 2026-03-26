@@ -30,7 +30,6 @@
     description = "${username}";
     extraGroups = [
       "networkmanager"
-      "adbusers" # доступ для `adb`/отладки Android устройств
       "wheel"
       "dialout"  # Для доступа к /dev/ttyACM0 (AOOSTAR display control)
     ];
