@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 {
   wayland.windowManager.hyprland.settings.exec-once = [
     # "hash dbus-update-activation-environment 2>/dev/null"
@@ -6,6 +6,7 @@
     # иначе переменные вроде NIXOS_OZONE_WL/ELECTRON_* могут не попадать в GUI приложения, запущенные из меню.
     "dbus-update-activation-environment --systemd --all"
     "systemctl --user import-environment --all"
+    "${pkgs.hyprpolkitagent}/libexec/hyprpolkitagent &"
 
     # Idle handled by hypridle (see ./hypridle.nix)
 

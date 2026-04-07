@@ -2,7 +2,10 @@
 {
   networking = {
     hostName = "${host}";
-    networkmanager.enable = true;
+    networkmanager = {
+      enable = true;
+      plugins = with pkgs; [ networkmanager-openvpn ];
+    };
     nameservers = [
       "8.8.8.8"
       "8.8.4.4"
@@ -11,7 +14,17 @@
     
     # Добавление записей в /etc/hosts
     hosts = {
-      "127.0.0.1" = [ "localhost" "adminer.dc" "ktng.dc" "babylon.dc" "faces.dc" "tbot.dc" "dolgagarina.dc" "limkorclub.dc" ];
+      "127.0.0.1" = [
+        "localhost"
+        "adminer.dc"
+        "ktng.dc"
+        "ktng-grafana.dc"
+        "babylon.dc"
+        "faces.dc"
+        "tbot.dc"
+        "dolgagarina.dc"
+        "limkorclub.dc"
+      ];
       "::1" = [ "localhost" ];
     };
     
