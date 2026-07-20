@@ -10,7 +10,6 @@
     ./documents-date-dirs.nix         # hourly Documents date folders maintenance
     ./discord.nix                     # discord
     ./fastfetch/fastfetch.nix         # fetch tool
-    ./fusion360.nix                   # Autodesk Fusion 360 (cryinkfly)
     ./fzf.nix                         # fuzzy finder
     ./gaming.nix                      # packages related to gaming
     ./ghostty/ghostty.nix             # terminal

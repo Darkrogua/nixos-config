@@ -18,10 +18,11 @@
       on-resume = hyprctl dispatch dpms on
     }
 
-    # После 15 минут уходим в сон 
+    # После 15 минут уходим в сон.
+    # Сам lock делает before_sleep_cmd, чтобы не запускать hyprlock дважды.
     listener {
       timeout = 900
-      on-timeout = pgrep -x hyprlock > /dev/null || hyprlock & sleep 2; systemctl suspend
+      on-timeout = systemctl suspend
     }
   '';
 

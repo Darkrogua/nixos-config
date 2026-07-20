@@ -1,4 +1,4 @@
-{ host, ... }:
+{ host, pkgs, ... }:
 {
   programs.hyprlock = {
     enable = true;
@@ -8,7 +8,8 @@
         hide_cursor = true;
         ignore_empty_input = true;
         fractional_scaling = 0;
-        dpms_timeout = 180;  # Выключить экран через 3 минуты (180 секунд) бездействия
+        # dpms_timeout убран: в hyprlock 0.9.3 опции нет (см. журнал hm_hyprhyprlock.conf).
+        # Таймаут гашения экрана — через hypridle / hyprctl dispatch dpms.
       };
 
       background = [
@@ -38,34 +39,6 @@
       ];
 
       label = [
-        # Time
-        {
-          text = ''cmd[update:1000] echo "$(date +'%k:%M')"'';
-
-          font_size = 115;
-          font_family = "Maple Mono Bold";
-
-          shadow_passes = 3;
-          color = "rgba(235, 219, 178, 0.9)";
-
-          position = "0, ${if host == "laptop" then "-25" else "-150"}";
-          halign = "center";
-          valign = "top";
-        }
-        # Date
-        {
-          text = ''cmd[update:1000] echo "- $(date +'%A, %B %d') -" '';
-
-          font_size = 18;
-          font_family = "Maple Mono";
-
-          shadow_passes = 3;
-          color = "rgba(235, 219, 178, 0.9)";
-
-          position = "0, ${if host == "laptop" then "-225" else "-350"}";
-          halign = "center";
-          valign = "top";
-        }
         # Username
         {
           text = "  $USER";

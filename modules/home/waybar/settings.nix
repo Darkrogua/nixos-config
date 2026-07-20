@@ -49,6 +49,7 @@ in
         "network"
         # "battery"  # Закомментировано: не нужен на десктопе
         "hyprland/language"
+        "custom/sleep-inhibit"
         "custom/notification"
         "custom/power-menu"
       ];
@@ -176,6 +177,13 @@ in
       format-ru = "RU";
       format-en = "US";
       on-click = "hyprctl switchxkblayout at-translated-set-2-keyboard next";
+    };
+    "custom/sleep-inhibit" = {
+      return-type = "json";
+      exec = "sleep-inhibit status";
+      interval = 3;
+      on-click = "sleep-inhibit toggle";
+      tooltip = true;
     };
     "custom/launcher" = {
       format = "";

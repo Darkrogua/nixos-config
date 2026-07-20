@@ -20,6 +20,14 @@
     bluetooth = {
       enable = true;
       powerOnBoot = true;
+      package = pkgs.bluez;
+      # Автовключение контроллера на старте bluetoothd.
+      settings = {
+        General = {
+          AutoEnable = true;
+          Experimental = true;
+        };
+      };
     };
   };
   hardware.enableRedistributableFirmware = true;

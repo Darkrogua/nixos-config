@@ -22,6 +22,7 @@
     amnezia-vpn
     blueman
     dconf-editor
+    guake
     gnome-disk-utility
     popsicle
     mission-center # GUI resources monitor
@@ -32,17 +33,6 @@
 
     ## Browser
     google-chrome                    # Google Chrome browser
-
-    ## Fusion 360 installer deps (cryinkfly script)
-    p7zip
-    cabextract
-    yad
-    gettext          # скрипт использует gettext
-    bc               # калькулятор в скрипте
-    mesa-demos       # glxinfo
-    mokutil          # проверка Secure Boot
-    lsb-release      # lsb_release для скрипта
-    samba            # samba, wbinfo — скрипт проверяет наличие
 
     ## Work
     insomnia

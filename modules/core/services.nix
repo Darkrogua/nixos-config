@@ -37,23 +37,23 @@
   systemd.services.bluetooth-poweron = {
     description = "Force Bluetooth powered on at boot";
     wantedBy = [ "multi-user.target" ];
+    wants = [ "bluetooth.service" ];
     after = [ "bluetooth.service" ];
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "${pkgs.bluez}/bin/bluetoothctl power on";
+      ExecStart = "${pkgs.bluez}/bin/bluetoothctl --timeout 10 power on";
     };
   };
 
   # Сбрасываем индикаторы питания после пробуждения из сна
   # Это решает проблему с мигающей кнопкой питания после suspend/resume
   # Используем systemd-sleep hooks для срабатывания при пробуждении
-  systemd.sleep.extraConfig = ''
-    [Sleep]
-    AllowSuspend=yes
-    AllowHibernation=no
-    AllowSuspendThenHibernate=no
-    AllowHybridSleep=no
-  '';
+  systemd.sleep.settings.Sleep = {
+    AllowSuspend = true;
+    AllowHibernation = false;
+    AllowSuspendThenHibernate = false;
+    AllowHybridSleep = false;
+  };
 
   # Скрипт для сброса индикаторов при пробуждении
   # Используем более надежный подход через systemd-sleep hook

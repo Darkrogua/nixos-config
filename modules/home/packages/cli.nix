@@ -21,9 +21,15 @@
     bitwise                           # cli tool for bit / hex manipulation
     broot                             # tree files view
     caligula                          # User-friendly, lightweight TUI for disk imaging
+    glab                              # GitLab CLI
     hashcat                           # GPU/CPU WPA & other hashes; -m 22000 for .hc22000
     hcxtools                          # hcxpcapngtool etc.: pcap/hccapx → hc22000
     crunch                            # генерит словари по длине и набору символов (PIN/цифры)
+    aircrack-ng                       # airmon-ng, airodump-ng, aireplay-ng
+    reaverwps                         # reaver + wash (WPS PIN / Pixie-Dust)
+    bully                             # альтернатива reaver для WPS
+    macchanger                        # подмена MAC при lockout WPS
+    pixiewps                          # Pixie-Dust offline (доп. к reaver -K)
     hyperfine                         # benchmarking tool
     pastel                            # cli to manipulate colors
     scooter                           # Interactive find and replace in the terminal
@@ -84,7 +90,5 @@
     wl-clipboard                      # clipboard utils for wayland (wl-copy, wl-paste)
     xdg-utils
 
-    winetricks
-    wineWowPackages.waylandFull
   ];
 }

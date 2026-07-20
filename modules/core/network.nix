@@ -24,6 +24,9 @@
         "tbot.dc"
         "dolgagarina.dc"
         "limkorclub.dc"
+        "keycloak.dc"
+        "royal.dc"
+        "grafana.dc"
       ];
       "::1" = [ "localhost" ];
     };

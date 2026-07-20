@@ -81,6 +81,12 @@
         identitiesOnly = true;
       };
 
+      "192.168.100.171" = {
+        host = "192.168.100.171";
+        identityFile = "~/.ssh/keys/192.168.100.171/id_ed25519";
+        identitiesOnly = true;
+      };
+
       "gitlab.nopreset.net" = {
         host = "gitlab.nopreset.net";
         identityFile = "~/.ssh/keys/gitlab.nopreset.net/id_ed25519";
