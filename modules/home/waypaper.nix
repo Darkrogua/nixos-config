@@ -8,7 +8,7 @@
     folder = ~/Pictures/wallpapers/others
     monitors = All
     wallpaper = ~/Pictures/wallpapers/others/nixos.png
-    backend = swww
+    backend = awww
     fill = fill
     sort = name
     color = #ffffff
