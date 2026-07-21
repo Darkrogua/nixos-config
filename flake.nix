@@ -3,6 +3,9 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Отдельный pin nixpkgs только для Cursor — можно обновлять без полного апдейта системы:
+    #   nix flake update nixpkgs-cursor
+    nixpkgs-cursor.url = "github:NixOS/nixpkgs/nixos-unstable";
     nur.url = "github:nix-community/NUR";
 
     waybar-module-music = {
