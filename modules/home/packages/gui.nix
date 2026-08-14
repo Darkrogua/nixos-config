@@ -3,7 +3,6 @@
   home.packages = with pkgs; [
     ## Multimedia
     audacity
-    blender
     gimp
     prusa-slicer       # слайсер для 3D-печати
     media-downloader

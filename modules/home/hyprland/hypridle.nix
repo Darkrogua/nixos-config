@@ -4,11 +4,13 @@
     hypridle
   ];
 
-  # Hypridle config (Hyprlang)
+  # Hypridle: wiki-схема (lock через loginctl → lock_cmd).
+  # after_sleep: dpms on + если hyprlock умер на resume — снова lock.
   xdg.configFile."hypr/hypridle.conf".text = ''
     general {
-      # Safety: lock screen before suspend triggered elsewhere
-      before_sleep_cmd = pgrep -x hyprlock > /dev/null || hyprlock
+      lock_cmd = pidof hyprlock || hyprlock
+      before_sleep_cmd = loginctl lock-session
+      after_sleep_cmd = hyprctl dispatch dpms on; pidof hyprlock || loginctl lock-session
     }
 
     # После 5 минут (60*5 = 300) выключаем экран
@@ -19,7 +21,7 @@
     }
 
     # После 15 минут уходим в сон.
-    # Сам lock делает before_sleep_cmd, чтобы не запускать hyprlock дважды.
+    # Lock перед suspend — before_sleep_cmd / lock_cmd.
     listener {
       timeout = 900
       on-timeout = systemctl suspend

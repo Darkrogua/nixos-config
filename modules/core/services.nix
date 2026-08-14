@@ -7,6 +7,11 @@
     gvfs.enable = true;
     fprintd.enable = true;
 
+    # Microarray MAFP 3274:8012 — доступ пользователю (касание, не HID)
+    udev.extraRules = ''
+      SUBSYSTEM=="usb", ATTR{idVendor}=="3274", ATTR{idProduct}=="8012", MODE="0660", TAG+="uaccess", GROUP="users"
+    '';
+
     # GUI менеджер Bluetooth (blueman-manager), полезен для Sway/Wayland
     blueman.enable = true;
 

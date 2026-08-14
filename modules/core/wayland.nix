@@ -6,7 +6,8 @@
 
   xdg.portal = {
     enable = true;
-    xdgOpenUsePortal = true;
+    # false: Electron (Obsidian и др.) иначе не открывает http(s) через portal
+    xdgOpenUsePortal = false;
     config = {
       common.default = [ "gtk" ];
       hyprland.default = [

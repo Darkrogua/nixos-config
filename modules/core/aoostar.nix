@@ -54,23 +54,19 @@
     wantedBy = [ "multi-user.target" ];
     after = [ "local-fs.target" "systemd-tmpfiles-setup.service" "aster-sysinfo.service" ];
     requires = [ "aster-sysinfo.service" ];
+    startLimitIntervalSec = 0;
     serviceConfig = {
       Type = "simple";
       User = "${username}";
       Group = "dialout";
       WorkingDirectory = "/home/${username}/Soft/aoostar-display";
-      # Создаем директорию и преобразуем данные от aster-sysinfo в формат, ожидаемый конфигурацией перед запуском
       ExecStartPre = [
         "${pkgs.coreutils}/bin/mkdir -p /home/${username}/.cache/asterctl/sensors"
-        "${pkgs.bash}/bin/bash /home/${username}/Soft/aoostar-display/convert-sensors.sh"
+        "${pkgs.bash}/bin/bash -c 'echo auto > /home/${username}/.cache/asterctl/lcd-page'"
       ];
-      # Запускаем asterctl в режиме sensor panel
-      # --config указывает на файл конфигурации панелей
-      # --sensor-path указывает на файл с преобразованными данными в домашней директории
-      # --config-dir указывает на директорию с конфигурацией
-      ExecStart = "${pkgs.bash}/bin/bash -c 'exec /home/${username}/Soft/aoostar-display/asterctl --config monitor.json --config-dir /home/${username}/Soft/aoostar-display/cfg --sensor-path /home/${username}/.cache/asterctl/sensors/values.txt'";
+      ExecStart = "${pkgs.bash}/bin/bash -c 'exec /home/${username}/Soft/aoostar-display/asterctl-pf --config monitor.json --config-dir /home/${username}/Soft/aoostar-display/cfg --sensor-path /home/${username}/.cache/asterctl/sensors/values.txt --panel-file /home/${username}/.cache/asterctl/lcd-page --panel-idle-secs 20'";
       Restart = "always";
-      RestartSec = "5";
+      RestartSec = "200ms";
       # Безопасность: ограничиваем доступ сервиса
       CapabilityBoundingSet = "";
       LockPersonality = true;

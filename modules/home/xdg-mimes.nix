@@ -2,6 +2,7 @@
 with lib;
 let
   defaultApps = {
+    browser = [ "zen-beta.desktop" ];
     text = [ "org.gnome.TextEditor.desktop" ];
     image = [ "imv-dir.desktop" ];
     audio = [ "mpv.desktop" ];
@@ -16,6 +17,14 @@ let
   };
 
   mimeMap = {
+    browser = [
+      "text/html"
+      "application/xhtml+xml"
+      "x-scheme-handler/http"
+      "x-scheme-handler/https"
+      "x-scheme-handler/about"
+      "x-scheme-handler/unknown"
+    ];
     text = [ "text/plain" ];
     image = [
       "image/bmp"
@@ -91,5 +100,7 @@ in
   home.sessionVariables = {
     # prevent wine from creating file associations
     WINEDLLOVERRIDES = "winemenubuilder.exe=d";
+    # Electron/Obsidian и др. открывают ссылки через $BROWSER / xdg-open
+    BROWSER = "zen-beta";
   };
 }

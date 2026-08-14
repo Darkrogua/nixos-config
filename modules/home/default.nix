@@ -20,6 +20,7 @@
     ./kitty.nix                       # terminal
     ./lazygit.nix
     ./micro.nix                       # nano replacement
+    ./ma-touch.nix                    # касание Microarray как кнопка
     ./nemo.nix                        # file manager
     ./nvim.nix                        # neovim editor
     ./obsidian.nix

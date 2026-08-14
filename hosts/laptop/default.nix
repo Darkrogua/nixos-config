@@ -5,6 +5,17 @@
     ./../../modules/core
   ];
 
+  # Второй NVMe (AirDisk 512GB, ext4) → ~/ssd (~10G неразмечено)
+  fileSystems."/home/darkrogua/ssd" = {
+    device = "/dev/disk/by-uuid/c2d9322e-87c8-4a4d-aecd-2b16cde5faf6";
+    fsType = "ext4";
+    options = [
+      "defaults"
+      "nofail"
+      "x-systemd.device-timeout=10s"
+    ];
+  };
+
   environment.systemPackages = with pkgs; [
     acpi
     brightnessctl
