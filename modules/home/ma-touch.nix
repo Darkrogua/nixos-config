@@ -51,8 +51,8 @@ in
     };
     Service = {
       ExecStart = "${ma-touch}/bin/ma-touch";
-      Restart = "on-failure";
-      RestartSec = 3;
+      Restart = "always";
+      RestartSec = 2;
     };
     Install.WantedBy = [ "graphical-session.target" ];
   };

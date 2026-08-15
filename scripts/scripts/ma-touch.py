@@ -26,6 +26,10 @@ HANDSHAKE = bytes(
 )
 
 
+class UsbGone(Exception):
+    pass
+
+
 def build_cmd(payload: bytes) -> bytes:
     length = len(payload) + 2
     pkt = bytearray([0xEF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, length >> 8, length & 0xFF])
@@ -48,29 +52,49 @@ def parse_ack(buf: bytes) -> bytes | None:
 def open_dev():
     dev = usb.core.find(idVendor=VID, idProduct=PID)
     if dev is None:
-        raise SystemExit("MAFP 3274:8012 не найден")
+        raise UsbGone("MAFP 3274:8012 не найден")
     try:
         if dev.is_kernel_driver_active(0):
             dev.detach_kernel_driver(0)
     except (usb.core.USBError, NotImplementedError):
         pass
-    dev.set_configuration()
-    usb.util.claim_interface(dev, 0)
+    try:
+        dev.set_configuration()
+        usb.util.claim_interface(dev, 0)
+    except usb.core.USBError as e:
+        raise UsbGone(str(e)) from e
     return dev
 
 
+def close_dev(dev) -> None:
+    if dev is None:
+        return
+    try:
+        usb.util.dispose_resources(dev)
+    except usb.core.USBError:
+        pass
+
+
 def send_recv(dev, pkt: bytes, read_len: int = 64) -> bytes:
-    dev.write(EP_OUT, pkt, timeout=TIMEOUT)
-    return bytes(dev.read(EP_IN, read_len, timeout=TIMEOUT))
+    try:
+        dev.write(EP_OUT, pkt, timeout=TIMEOUT)
+        return bytes(dev.read(EP_IN, read_len, timeout=TIMEOUT))
+    except usb.core.USBError as e:
+        raise UsbGone(str(e)) from e
 
 
 def finger_present(dev) -> bool:
-    try:
-        raw = send_recv(dev, build_cmd(bytes([0x01])))
-    except usb.core.USBError:
-        return False
+    raw = send_recv(dev, build_cmd(bytes([0x01])))
     data = parse_ack(raw)
     return bool(data) and data[0] == 0
+
+
+def handshake(dev) -> None:
+    try:
+        send_recv(dev, HANDSHAKE, 12)
+    except UsbGone as e:
+        print(f"handshake: {e}", file=sys.stderr)
+        raise
 
 
 def fire(kind: str) -> None:
@@ -89,17 +113,31 @@ def fire(kind: str) -> None:
 
 
 def main() -> int:
-    dev = open_dev()
-    try:
-        send_recv(dev, HANDSHAKE, 12)
-    except usb.core.USBError as e:
-        print(f"handshake: {e}", file=sys.stderr)
-
+    dev = None
     down = False
     t_press = 0.0
     print("slushayu kasaniya MAFP (tap / hold)...", flush=True)
     while True:
-        present = finger_present(dev)
+        if dev is None:
+            try:
+                dev = open_dev()
+                handshake(dev)
+                print("usb ok", flush=True)
+            except UsbGone as e:
+                print(f"usb wait: {e}", flush=True)
+                close_dev(dev)
+                dev = None
+                time.sleep(1)
+                continue
+        try:
+            present = finger_present(dev)
+        except UsbGone as e:
+            print(f"usb lost: {e}", flush=True)
+            close_dev(dev)
+            dev = None
+            down = False
+            time.sleep(0.5)
+            continue
         if present and not down:
             down = True
             t_press = time.monotonic()

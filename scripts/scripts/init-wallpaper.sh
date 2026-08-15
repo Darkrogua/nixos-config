@@ -1,14 +1,31 @@
 #!/usr/bin/env bash
 
-# Start awww daemon if not running (swww was renamed to awww)
-if ! pgrep -x awww-daemon > /dev/null; then
-    awww-daemon --no-cache &
+WP="${HOME}/Pictures/wallpapers/wallpaper"
+need_restart=0
 
-    # Wait until the daemon is ready
-    while ! awww query > /dev/null 2>&1; do
+if [[ "${1:-}" == "--restart" ]]; then
+    need_restart=1
+fi
+
+if ! command -v awww >/dev/null 2>&1; then
+    echo "awww not in PATH" >&2
+    exit 1
+fi
+
+if ! awww query >/dev/null 2>&1; then
+    need_restart=1
+fi
+
+if [[ "$need_restart" == 1 ]]; then
+    pkill -x awww-daemon >/dev/null 2>&1 || true
+    sleep 0.2
+    awww-daemon --no-cache &
+    for _ in $(seq 1 50); do
+        if awww query >/dev/null 2>&1; then
+            break
+        fi
         sleep 0.1
     done
 fi
 
-# Set wallpaper
-awww img -t none ~/Pictures/wallpapers/wallpaper &
+awww img -t none "$WP"
