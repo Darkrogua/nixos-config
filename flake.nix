@@ -36,7 +36,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     superfile.url = "github:yorukot/superfile";
-    zen-browser.url = "github:0xc000022070/zen-browser-flake/beta";
+    zen-browser = {
+      url = "github:0xc000022070/zen-browser-flake/beta";
+      # Тот же nixpkgs, что и у системы: иначе glibc расходится и libpulse не грузится (нет звука).
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
   };
 
   outputs =
