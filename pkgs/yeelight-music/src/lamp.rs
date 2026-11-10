@@ -15,7 +15,20 @@ use std::time::{Duration, Instant};
 const CONNECT_GRACE: Duration = Duration::from_millis(150);
 const CMD_TIMEOUT: Duration = Duration::from_secs(8);
 const OFF_CMD_TIMEOUT: Duration = Duration::from_secs(2);
-const QUOTA_PER_MIN: f64 = 58.0;
+const QUOTA_PER_MIN: f64 = 50.0;
+/// Tokens kept on each LAN connection so shutdown still has room after a
+/// sustained visualizer run (the lamp rejects extra commands with
+/// "client quota exceeded"; reconnecting does not reset that window).
+const SHUTDOWN_RESERVE: f64 = 4.0;
+/// Keep colour-flow duration under the ~650 ms send interval so a new
+/// `bg_start_cf` does not start while the previous flow is still running.
+/// Overlapping flows can desync the firmware (`bg_flowing` stuck on, `bg_set_power
+/// off` becomes a no-op while get_prop already reports off).
+const CF_MAX_DURATION_MS: u32 = 540;
+/// Forced on→off dance: this lamp may report `bg_power=off` and ack off while
+/// the rear RGB stays lit. A confirmed visual off is: power on, wait, power off.
+const OFF_FORCE_ON_WAIT: Duration = Duration::from_millis(1200);
+const OFF_AFTER_OFF_WAIT: Duration = Duration::from_millis(600);
 
 pub struct Lamp {
     ip: String,
@@ -240,12 +253,16 @@ impl Lamp {
         let Some(idx) = idx else {
             return Ok(false);
         };
-        if !self.pool[idx].quota.try_take() {
+        // Leave SHUTDOWN_RESERVE tokens so the on→off dance is not refused
+        // after a long session sitting at the lamp's ~60/min cap.
+        if self.pool[idx].quota.tokens < 1.0 + SHUTDOWN_RESERVE
+            || !self.pool[idx].quota.try_take()
+        {
             return Ok(false);
         }
 
         let id = self.alloc_id();
-        let dur = duration_ms.clamp(200, 800);
+        let dur = duration_ms.clamp(200, CF_MAX_DURATION_MS);
         let payload = json!({
             "id": id,
             "method": "bg_start_cf",
@@ -279,9 +296,15 @@ impl Lamp {
 
     /// Turn the RGB backlight off. Never opens a third TCP socket while the
     /// pool still holds the lamp's two slots. Does not touch the main light.
+    ///
+    /// A plain `bg_set_power off` can be a no-op on this firmware: it acks "ok"
+    /// and `get_prop bg_power` returns "off" while the rear RGB stays lit, and
+    /// it never emits a `props` notification for `bg_power=off`. The reliable
+    /// sequence is: stop any colour flow, force `bg_set_power on`, wait, then
+    /// `bg_set_power off` with a short smooth transition.
     pub fn turn_bg_off(&mut self) -> Result<()> {
         if self.music_enabled {
-            let _ = self.rpc_existing("set_music", json!([0]), OFF_CMD_TIMEOUT);
+            let _ = self.rpc_shutdown("set_music", json!([0]), OFF_CMD_TIMEOUT);
             self.music_enabled = false;
         }
         if let Some(stream) = self.music.take() {
@@ -289,39 +312,41 @@ impl Lamp {
             drop(stream);
         }
 
-        if !self.pool.is_empty() {
-            match self.try_power_off_on_pool() {
+        let mut delay = Duration::from_secs(3);
+        for attempt in 1..=4 {
+            if self.pool.is_empty() {
+                if let Err(e) = self.reconnect_one() {
+                    eprintln!("yeelight-music: reconnect for off attempt {attempt} failed: {e}");
+                    std::thread::sleep(delay);
+                    delay = (delay * 2).min(Duration::from_secs(8));
+                    continue;
+                }
+            }
+            match self.force_bg_off_sequence() {
                 Ok(()) => {
-                    eprintln!("yeelight-music: bg_power off (existing connection)");
+                    if attempt == 1 {
+                        eprintln!("yeelight-music: bg_power off (on→off, existing connection)");
+                    } else {
+                        eprintln!("yeelight-music: bg_power off (on→off, attempt {attempt})");
+                    }
                     self.close_all();
                     return Ok(());
                 }
                 Err(e) => {
-                    eprintln!("yeelight-music: off via existing connection failed: {e}");
-                }
-            }
-        }
-
-        let mut delay_ms = 500u64;
-        for attempt in 1..=5 {
-            self.close_all();
-            std::thread::sleep(Duration::from_millis(delay_ms));
-            match self.reconnect_one() {
-                Ok(()) => match self.try_power_off_fresh() {
-                    Ok(()) => {
-                        eprintln!("yeelight-music: bg_power off (attempt {attempt})");
+                    eprintln!("yeelight-music: off attempt {attempt} failed: {e}");
+                    let quota = is_quota_error(&e);
+                    if quota {
+                        // Lamp-side window is shared; closing sockets does not
+                        // refill it. Wait, then retry on the same connection.
+                        eprintln!("yeelight-music: lamp quota exceeded, waiting {delay:?}");
+                        std::thread::sleep(delay);
+                        delay = (delay * 2).min(Duration::from_secs(8));
+                    } else {
                         self.close_all();
-                        return Ok(());
+                        std::thread::sleep(Duration::from_millis(500));
                     }
-                    Err(e) => {
-                        eprintln!("yeelight-music: bg off attempt {attempt} failed: {e}");
-                    }
-                },
-                Err(e) => {
-                    eprintln!("yeelight-music: reconnect for off attempt {attempt} failed: {e}");
                 }
             }
-            delay_ms = (delay_ms + 300).min(1500);
         }
         Err(anyhow!("failed to turn bg off after retries"))
     }
@@ -350,22 +375,69 @@ impl Lamp {
         Ok(())
     }
 
-    fn best_quota_idx(&mut self) -> Option<usize> {
-        self.pool
+    /// Prefer a connection with remaining quota; if `require_token` is false
+    /// (shutdown path), fall back to any live socket so off is never skipped.
+    fn best_idx(&mut self, require_token: bool) -> Option<usize> {
+        let ranked: Vec<(usize, f64)> = self
+            .pool
             .iter_mut()
             .enumerate()
             .map(|(i, p)| {
                 p.quota.refill();
                 (i, p.quota.tokens)
             })
+            .collect();
+        ranked
+            .iter()
+            .cloned()
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
-            .and_then(|(i, tokens)| if tokens >= 1.0 { Some(i) } else { None })
+            .and_then(|(i, tokens)| {
+                if !require_token || tokens >= 1.0 {
+                    Some(i)
+                } else {
+                    None
+                }
+            })
     }
 
-    fn rpc_existing(&mut self, method: &str, params: Value, timeout: Duration) -> Result<Value> {
+    fn rpc_shutdown(&mut self, method: &str, params: Value, timeout: Duration) -> Result<Value> {
+        self.rpc_on_idx(method, params, timeout, false)
+    }
+
+    /// Shutdown commands must get through even when the visualizer just
+    /// exhausted the lamp window. Wait for refill instead of giving up.
+    fn rpc_shutdown_wait(&mut self, method: &str, params: Value, timeout: Duration) -> Result<Value> {
+        let mut delay = Duration::from_secs(3);
+        let mut attempt = 0u32;
+        loop {
+            attempt += 1;
+            if self.pool.is_empty() {
+                self.reconnect_one()?;
+            }
+            match self.rpc_shutdown(method, params.clone(), timeout) {
+                Ok(v) => return Ok(v),
+                Err(e) if is_quota_error(&e) && attempt < 3 => {
+                    eprintln!(
+                        "yeelight-music: {method} quota exceeded (attempt {attempt}); retry in {delay:?}"
+                    );
+                    std::thread::sleep(delay);
+                    delay = (delay + Duration::from_secs(2)).min(Duration::from_secs(7));
+                }
+                Err(e) => return Err(e),
+            }
+        }
+    }
+
+    fn rpc_on_idx(
+        &mut self,
+        method: &str,
+        params: Value,
+        timeout: Duration,
+        require_token: bool,
+    ) -> Result<Value> {
         let idx = self
-            .best_quota_idx()
-            .ok_or_else(|| anyhow!("no LAN connection with remaining quota"))?;
+            .best_idx(require_token)
+            .ok_or_else(|| anyhow!("no LAN connection available"))?;
         let _ = self.pool[idx].quota.try_take();
         let id = self.alloc_id();
         let payload = json!({"id": id, "method": method, "params": params});
@@ -391,7 +463,7 @@ impl Lamp {
     }
 
     fn bg_is_off(&mut self) -> bool {
-        match self.rpc_existing("get_prop", json!(["bg_power"]), OFF_CMD_TIMEOUT) {
+        match self.rpc_shutdown("get_prop", json!(["bg_power"]), OFF_CMD_TIMEOUT) {
             Ok(resp) => {
                 resp.get("result")
                     .and_then(|r| r.as_array())
@@ -406,46 +478,41 @@ impl Lamp {
         }
     }
 
-    fn try_power_off_on_pool(&mut self) -> Result<()> {
+    /// Stop flow, force the backlight on, wait, then smooth-off and verify.
+    /// Always performs the dance even if get_prop already says "off".
+    fn force_bg_off_sequence(&mut self) -> Result<()> {
         if self.pool.is_empty() {
             return Err(anyhow!("no existing connections"));
         }
-        match self.rpc_existing("bg_stop_cf", json!([]), OFF_CMD_TIMEOUT) {
-            Ok(_) => {}
+        match self.rpc_shutdown_wait("bg_stop_cf", json!([]), OFF_CMD_TIMEOUT) {
+            Ok(_) => eprintln!("yeelight-music: colour flow stopped"),
             Err(e) => {
                 if self.pool.is_empty() {
                     return Err(e);
                 }
-                // Method/quota error but the socket is still up — continue.
                 eprintln!("yeelight-music: bg_stop_cf: {e}");
             }
         }
-        self.rpc_existing(
-            "bg_set_power",
-            json!(["off", "sudden", 0]),
-            OFF_CMD_TIMEOUT,
-        )?;
-        if self.bg_is_off() {
-            Ok(())
-        } else {
-            Err(anyhow!("bg_power still on after bg_set_power"))
-        }
-    }
 
-    /// After a full reconnect the colour flow is already gone; only power off + verify.
-    fn try_power_off_fresh(&mut self) -> Result<()> {
-        if self.pool.is_empty() {
-            return Err(anyhow!("reconnect produced no connection"));
-        }
-        self.rpc_existing(
+        eprintln!("yeelight-music: forcing bg_power on before off");
+        self.rpc_shutdown_wait(
             "bg_set_power",
-            json!(["off", "sudden", 0]),
+            json!(["on", "smooth", 300]),
             OFF_CMD_TIMEOUT,
         )?;
+        std::thread::sleep(OFF_FORCE_ON_WAIT);
+
+        self.rpc_shutdown_wait(
+            "bg_set_power",
+            json!(["off", "smooth", 500]),
+            OFF_CMD_TIMEOUT,
+        )?;
+        std::thread::sleep(OFF_AFTER_OFF_WAIT);
+
         if self.bg_is_off() {
             Ok(())
         } else {
-            Err(anyhow!("bg_power still on after bg_set_power"))
+            Err(anyhow!("bg_power still on after on→off sequence"))
         }
     }
 
@@ -488,6 +555,10 @@ impl Lamp {
     fn drop_dead_pool(&mut self) {
         // failed I/O removes sockets at the call site
     }
+}
+
+fn is_quota_error(err: &anyhow::Error) -> bool {
+    err.to_string().to_ascii_lowercase().contains("quota")
 }
 
 fn open_stream(ip: &str, port: u16) -> Result<TcpStream> {

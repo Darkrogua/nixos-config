@@ -144,10 +144,10 @@ print_status() {
 
 cmd_toggle() {
   if is_active; then
-    systemctl --user stop yeelight-music
-    # Если сервис уже остановился, но лампа могла остаться включённой —
-    # одноразовый --off (свои повторы подключения, один слот).
-    if ! is_active; then
+    # Не вызывать --off после успешного stop: сервис сам делает on→off,
+    # а повторный --off коротко вспыхнул бы подсветкой. Запасной --off
+    # только если stop не удался (таймаут/ошибка).
+    if ! systemctl --user stop yeelight-music; then
       yeelight-music --off >/dev/null 2>&1 || true
     fi
   else

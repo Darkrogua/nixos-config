@@ -21,7 +21,7 @@
       ExecStart = "${pkgs.yeelight-music}/bin/yeelight-music";
       Restart = "on-failure";
       RestartSec = 5;
-      TimeoutStopSec = 15;
+      TimeoutStopSec = 25;
     };
     Install.WantedBy = [ "graphical-session.target" ];
   };

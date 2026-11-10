@@ -358,8 +358,10 @@ fn main() -> Result<()> {
     let min_interval = if music {
         Duration::from_millis(40) // 25 Hz
     } else {
-        // 2 connections × 58/min ≈ 1.93 Hz; 520 ms leaves a little headroom.
-        Duration::from_millis(520)
+        // 2 connections × 50/min ≈ 1.67 Hz; 650 ms leaves headroom for the
+        // on→off shutdown sequence (lamp quota is ~60/min and is not reset
+        // by reconnecting).
+        Duration::from_millis(650)
     };
 
     let mut latest = Spectrum::default();
