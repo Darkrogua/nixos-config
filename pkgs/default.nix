@@ -8,6 +8,7 @@
     stdenv = pkgs.gcc14Stdenv;
   };
   maple-mono-custom = pkgs.callPackage ./maple-mono { inherit inputs; };
+  grok-bot = pkgs.callPackage ./grok-bot { };
 
   # Актуальный Cursor из отдельного nixpkgs-cursor (не тащит весь апдейт системы)
   code-cursor =

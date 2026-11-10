@@ -45,12 +45,11 @@ run_cmd() {
         elif [[ $1 == '--reboot' ]]; then
             systemctl reboot
         elif [[ $1 == '--suspend' ]]; then
-            loginctl lock-session
-            sleep 1
+            hypr-sleep prepare
             systemctl suspend
         elif [[ $1 == '--logout' ]]; then
             if command -v hyprctl >/dev/null 2>&1; then
-                hyprctl dispatch exit
+                hyprctl dispatch 'hl.dsp.exit()'
             else
                 loginctl terminate-user "$USER"
             fi

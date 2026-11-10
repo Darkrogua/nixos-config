@@ -32,6 +32,7 @@
       "networkmanager"
       "wheel"
       "dialout"  # Для доступа к /dev/ttyACM0 (AOOSTAR display control)
+      "plugdev"  # QMK udev (50-qmk.rules)
     ];
     shell = pkgs.zsh;
   };

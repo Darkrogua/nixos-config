@@ -14,6 +14,7 @@ let
     archive = [ "org.gnome.FileRoller.desktop" ];
     discord = [ "webcord.desktop" ];
     insomnia = [ "insomnia.desktop" ];
+    grok-bot = [ "grok-bot.desktop" ];
   };
 
   mimeMap = {
@@ -79,6 +80,10 @@ let
     ];
     discord = [ "x-scheme-handler/discord" ];
     insomnia = [ "x-scheme-handler/insomnia" ];
+    grok-bot = [
+      "x-scheme-handler/grokbot"
+      "x-scheme-handler/sand"
+    ];
   };
 
   associations =

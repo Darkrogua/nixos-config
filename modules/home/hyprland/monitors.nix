@@ -1,14 +1,12 @@
 { pkgs, ... }:
 {
-  wayland.windowManager.hyprland = {
-    settings.monitor = [ ",preferred,auto,auto" ];
-
-    extraConfig = ''
-      # hyprlang noerror true
-        source = ~/.config/hypr/monitors.conf
-        source = ~/.config/hypr/workspaces.conf
-      # hyprlang noerror false
-    '';
+  wayland.windowManager.hyprland.settings = {
+    monitor = {
+      output = "";
+      mode = "preferred";
+      position = "auto";
+      scale = "auto";
+    };
   };
 
   home.packages = with pkgs; [ nwg-displays ];

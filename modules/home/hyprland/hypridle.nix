@@ -9,19 +9,20 @@ in
 
   # Hypridle: wiki-схема (lock через loginctl → lock_cmd).
   # Обои awww после сна часто пропадают — ставим снова после unlock, не на lock-экране.
+  # after_sleep: не dpms сразу — см. hypr-sleep resume (гонка HDMI/wl_output после s2idle).
   xdg.configFile."hypr/hypridle.conf".text = ''
     general {
       lock_cmd = pidof hyprlock || hyprlock
-      before_sleep_cmd = loginctl lock-session
-      after_sleep_cmd = hyprctl dispatch dpms on; pidof hyprlock || loginctl lock-session
+      before_sleep_cmd = hypr-sleep prepare
+      after_sleep_cmd = hypr-sleep resume
       on_unlock_cmd = sh -c '${initWallpaper} --restart; systemctl --user restart ma-touch'
     }
 
     # После 5 минут (60*5 = 300) выключаем экран
     listener {
       timeout = 300
-      on-timeout = hyprctl dispatch dpms off
-      on-resume = hyprctl dispatch dpms on
+      on-timeout = hyprctl dispatch 'hl.dsp.dpms({ action = "off" })'
+      on-resume = hyprctl dispatch 'hl.dsp.dpms({ action = "on" })'
     }
 
     # После 15 минут уходим в сон.

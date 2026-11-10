@@ -22,10 +22,11 @@
     package = null;
     portalPackage = null;
 
-    # HM при stateVersion >= 26.05 по умолчанию пишет hyprland.lua.
-    # Наш settings/extraConfig всё ещё в hyprlang — без этого после апдейта
-    # на Hyprland 0.55 конфиг сыпется (в .lua попадает сырой hyprlang).
-    configType = "hyprlang";
+    # Hyprland 0.57 dropped hyprlang: it only loads ~/.config/hypr/hyprland.lua
+    # (and autogenerates a default one if that file is missing), ignoring
+    # hyprland.conf. Home Manager must emit Lua so the compositor picks up
+    # our binds, look, layout and exec-once instead of the stock example.
+    configType = "lua";
 
     xwayland = {
       enable = true;

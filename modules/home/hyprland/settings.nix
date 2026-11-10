@@ -1,128 +1,127 @@
-{ ... }:
+{ lib, ... }:
 {
   wayland.windowManager.hyprland.settings = {
-    "$mod" = "SUPER";
-
-    # По nixos.wiki/Wayland: для Electron/Chromium приложений включаем Ozone Wayland через env.
-    # Это критично, если XWayland масштабирование отключено (xwayland.force_zero_scaling=true),
-    # иначе Electron apps (в т.ч. Cursor) могут выглядеть слишком мелкими на HiDPI.
     env = [
-      "NIXOS_OZONE_WL,1"
-      # Доп. хинты (часто помогают Electron форкам)
-      "ELECTRON_OZONE_PLATFORM_HINT,wayland"
-      "OZONE_PLATFORM,wayland"
+      { _args = [ "NIXOS_OZONE_WL" "1" ]; }
+      { _args = [ "ELECTRON_OZONE_PLATFORM_HINT" "wayland" ]; }
+      { _args = [ "OZONE_PLATFORM" "wayland" ]; }
     ];
 
-    input = {
-      kb_layout = "us,ru";
-      kb_options = "grp:caps_toggle";
+    config = {
+      input = {
+        kb_layout = "us,ru";
+        kb_options = "grp:caps_toggle";
 
-      repeat_delay = 300;
-      numlock_by_default = true;
+        repeat_delay = 300;
+        numlock_by_default = true;
 
-      follow_mouse = 0;
-      mouse_refocus = 0;
-      float_switch_override_focus = 0;
+        follow_mouse = 0;
+        mouse_refocus = false;
+        float_switch_override_focus = 0;
 
-      touchpad = {
-        disable_while_typing = false;
-        natural_scroll = true;
-      };
-    };
-
-    general = {
-      layout = "dwindle";
-
-      gaps_in = 0;
-      gaps_out = 0;
-      border_size = 2;
-
-      "col.active_border" = "rgb(98971A) rgb(CC241D) 45deg";
-      "col.inactive_border" = "0x00000000";
-    };
-
-    misc = {
-      disable_hyprland_logo = true;
-      disable_splash_rendering = true;
-
-      focus_on_activate = true;
-      middle_click_paste = false;
-
-      disable_autoreload = true;
-      allow_session_lock_restore = true;  # Автоматически восстанавливать блокировку после пробуждения
-    };
-
-    dwindle = {
-      force_split = 2;
-      preserve_split = true;
-      use_active_for_splits = true;
-    };
-
-    master = {
-      new_status = "master";
-    };
-
-    decoration = {
-      rounding = 0;
-
-      active_opacity = 1.0;
-      inactive_opacity = 1.0;
-
-      blur = {
-        enabled = false;
-
-        size = 3;
-        noise = 0;
-        passes = 2;
-        contrast = 1.4;
-        brightness = 1;
-
-        xray = true;
+        touchpad = {
+          disable_while_typing = false;
+          natural_scroll = true;
+        };
       };
 
-      shadow = {
+      general = {
+        layout = "dwindle";
+
+        gaps_in = 0;
+        gaps_out = 0;
+        border_size = 2;
+
+        col = {
+          active_border = {
+            colors = [ "rgb(98971A)" "rgb(CC241D)" ];
+            angle = 45;
+          };
+          inactive_border = "0x00000000";
+        };
+      };
+
+      misc = {
+        disable_hyprland_logo = true;
+        disable_splash_rendering = true;
+
+        focus_on_activate = true;
+        middle_click_paste = false;
+
+        disable_autoreload = true;
+        allow_session_lock_restore = true;
+      };
+
+      dwindle = {
+        force_split = 2;
+        preserve_split = true;
+        use_active_for_splits = true;
+      };
+
+      master = {
+        new_status = "master";
+      };
+
+      decoration = {
+        rounding = 0;
+
+        active_opacity = 1.0;
+        inactive_opacity = 1.0;
+
+        blur = {
+          enabled = false;
+
+          size = 3;
+          noise = 0;
+          passes = 2;
+          contrast = 1.4;
+          brightness = 1;
+
+          xray = true;
+        };
+
+        shadow = {
+          enabled = true;
+
+          range = 20;
+          render_power = 3;
+
+          offset = [ 0 2 ];
+          color = "rgba(00000055)";
+        };
+      };
+
+      animations = {
         enabled = true;
+      };
 
-        range = 20;
-        render_power = 3;
+      binds = {
+        scroll_event_delay = 100;
+        movefocus_cycles_fullscreen = true;
+      };
 
-        offset = "0 2";
-        color = "rgba(00000055)";
+      xwayland = {
+        force_zero_scaling = true;
       };
     };
 
-    animations = {
-      enabled = true;
+    curve = [
+      { _args = [ "fluent_decel" { type = "bezier"; points = [ [ 0 0.2 ] [ 0.4 1 ] ]; } ]; }
+      { _args = [ "easeOutCirc" { type = "bezier"; points = [ [ 0 0.55 ] [ 0.45 1 ] ]; } ]; }
+      { _args = [ "easeOutCubic" { type = "bezier"; points = [ [ 0.33 1 ] [ 0.68 1 ] ]; } ]; }
+      { _args = [ "fade_curve" { type = "bezier"; points = [ [ 0 0.55 ] [ 0.45 1 ] ]; } ]; }
+    ];
 
-      bezier = [
-        "fluent_decel, 0, 0.2, 0.4, 1"
-        "easeOutCirc, 0, 0.55, 0.45, 1"
-        "easeOutCubic, 0.33, 1, 0.68, 1"
-        "fade_curve, 0, 0.55, 0.45, 1"
-      ];
-
-      animation = [
-        # name, enable, speed, curve, style
-
-        # Windows
-        "windowsIn,   0, 4, easeOutCubic,  popin 20%" # window open
-        "windowsOut,  0, 4, fluent_decel,  popin 80%" # window close.
-        "windowsMove, 1, 2, fluent_decel, slide" # everything in between, moving, dragging, resizing.
-
-        # Fade
-        "fadeIn,      1, 3,   fade_curve" # fade in (open) -> layers and windows
-        "fadeOut,     1, 3,   fade_curve" # fade out (close) -> layers and windows
-        "fadeSwitch,  0, 1,   easeOutCirc" # fade on changing activewindow and its opacity
-        "fadeShadow,  1, 10,  easeOutCirc" # fade on changing activewindow for shadows
-        "fadeDim,     1, 4,   fluent_decel" # the easing of the dimming of inactive windows
-        # "border,      1, 2.7, easeOutCirc"  # for animating the border's color switch speed
-        # "borderangle, 1, 30,  fluent_decel, once" # for animating the border's gradient angle - styles: once (default), loop
-        "workspaces,  1, 4,   easeOutCubic, fade" # styles: slide, slidevert, fade, slidefade, slidefadevert
-      ];
-    };
-
-    xwayland = {
-      force_zero_scaling = true;
-    };
+    animation = [
+      { leaf = "windowsIn"; enabled = false; speed = 4; bezier = "easeOutCubic"; style = "popin 20%"; }
+      { leaf = "windowsOut"; enabled = false; speed = 4; bezier = "fluent_decel"; style = "popin 80%"; }
+      { leaf = "windowsMove"; enabled = true; speed = 2; bezier = "fluent_decel"; style = "slide"; }
+      { leaf = "fadeIn"; enabled = true; speed = 3; bezier = "fade_curve"; }
+      { leaf = "fadeOut"; enabled = true; speed = 3; bezier = "fade_curve"; }
+      { leaf = "fadeSwitch"; enabled = false; speed = 1; bezier = "easeOutCirc"; }
+      { leaf = "fadeShadow"; enabled = true; speed = 10; bezier = "easeOutCirc"; }
+      { leaf = "fadeDim"; enabled = true; speed = 4; bezier = "fluent_decel"; }
+      { leaf = "workspaces"; enabled = true; speed = 4; bezier = "easeOutCubic"; style = "fade"; }
+    ];
   };
 }

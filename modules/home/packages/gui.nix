@@ -39,6 +39,7 @@
     # postman управляется через modules/home/postman.nix с настройками Wayland
     jetbrains.phpstorm
     code-cursor
+    grok-bot
     
   ];
 }

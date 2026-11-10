@@ -14,6 +14,7 @@
     ./steam.nix
     ./system.nix
     ./flatpak.nix
+    ./fonts.nix
     ./user.nix
     ./wayland.nix
     ./virtualization.nix

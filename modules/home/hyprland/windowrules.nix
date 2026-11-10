@@ -1,71 +1,71 @@
 { ... }:
 {
   wayland.windowManager.hyprland.settings = {
-    windowrule = [
-      "match:class ^(imv)$, float on"
-      "match:class ^(mpv)$, float on"
-      "match:class ^(zenity)$, float on"
-      "match:class ^(waypaper)$, float on"
-      "match:class ^(SoundWireServer)$, float on"
-      "match:class ^(.sameboy-wrapped)$, float on"
-      "match:class ^(org.gnome.Calculator)$, float on"
-      "match:class ^(org.gnome.FileRoller)$, float on"
-      "match:class ^(org.pulseaudio.pavucontrol)$, float on"
+    window_rule = [
+      { name = "float-imv"; match.class = "^(imv)$"; float = true; }
+      { name = "float-mpv"; match.class = "^(mpv)$"; float = true; }
+      { name = "float-zenity"; match.class = "^(zenity)$"; float = true; }
+      { name = "float-waypaper"; match.class = "^(waypaper)$"; float = true; }
+      { name = "float-soundwire"; match.class = "^(SoundWireServer)$"; float = true; }
+      { name = "float-sameboy"; match.class = "^(.sameboy-wrapped)$"; float = true; }
+      { name = "float-calculator"; match.class = "^(org.gnome.Calculator)$"; float = true; }
+      { name = "float-fileroller"; match.class = "^(org.gnome.FileRoller)$"; float = true; }
+      { name = "float-pavucontrol"; match.class = "^(org.pulseaudio.pavucontrol)$"; float = true; }
 
-      "match:class ^(rofi)$, pin on"
-      "match:class ^(waypaper)$, pin on"
+      { name = "pin-rofi"; match.class = "^(rofi)$"; pin = true; }
+      { name = "pin-waypaper"; match.class = "^(waypaper)$"; pin = true; }
 
-      "match:class ^(Aseprite)$, tile on"
+      { name = "tile-aseprite"; match.class = "^(Aseprite)$"; tile = true; }
 
-      "match:class ^(zenity)$, size 850 500"
-      "match:class ^(SoundWireServer)$, size 725 330"
+      { name = "size-zenity"; match.class = "^(zenity)$"; size = "850 500"; }
+      { name = "size-soundwire"; match.class = "^(SoundWireServer)$"; size = "725 330"; }
 
-      "match:title ^(Volume Control)$, size 700 450"
-      "match:title ^(Volume Control)$, move 40 55%"
+      { name = "size-volume-control"; match.title = "^(Volume Control)$"; size = "700 450"; }
+      { name = "move-volume-control"; match.title = "^(Volume Control)$"; move = "40 55%"; }
 
-      "match:title ^(Picture-in-Picture)$, pin on"
-      "match:title ^(Picture-in-Picture)$, float on"
+      { name = "pin-pip"; match.title = "^(Picture-in-Picture)$"; pin = true; }
+      { name = "float-pip"; match.title = "^(Picture-in-Picture)$"; float = true; }
 
       # Workspace 1: Telegram и Obsidian
-      "match:class ^(Telegram)$, workspace 1"
-      "match:class ^(TelegramDesktop)$, workspace 1"
-      "match:class ^(telegram-desktop)$, workspace 1"
-      "match:class ^(obsidian)$, workspace 1"
-      "match:class ^(zen-beta)$, workspace 2"
-      "match:class ^(Gimp-2.10)$, workspace 4"
-      "match:class ^(Aseprite)$, workspace 4"
-      "match:class ^(Audacious)$, workspace 5"
-      "match:class ^(Spotify)$, workspace 5"
-      "match:class ^(com.obsproject.Studio)$, workspace 8"
-      "match:class ^(discord)$, workspace 10"
-      "match:class ^(WebCord)$, workspace 10"
-      "match:class ^(vesktop)$, workspace 10"
+      { name = "ws-telegram"; match.class = "^(Telegram)$"; workspace = 1; }
+      { name = "ws-telegramdesktop"; match.class = "^(TelegramDesktop)$"; workspace = 1; }
+      { name = "ws-telegram-desktop"; match.class = "^(telegram-desktop)$"; workspace = 1; }
+      { name = "ws-obsidian"; match.class = "^(obsidian)$"; workspace = 1; }
+      { name = "ws-zen-beta"; match.class = "^(zen-beta)$"; workspace = 2; }
+      { name = "ws-gimp"; match.class = "^(Gimp-2.10)$"; workspace = 4; }
+      { name = "ws-aseprite"; match.class = "^(Aseprite)$"; workspace = 4; }
+      { name = "ws-audacious"; match.class = "^(Audacious)$"; workspace = 5; }
+      { name = "ws-spotify"; match.class = "^(Spotify)$"; workspace = 5; }
+      { name = "ws-obs"; match.class = "^(com.obsproject.Studio)$"; workspace = 8; }
+      { name = "ws-discord"; match.class = "^(discord)$"; workspace = 10; }
+      { name = "ws-webcord"; match.class = "^(WebCord)$"; workspace = 10; }
+      { name = "ws-vesktop"; match.class = "^(vesktop)$"; workspace = 10; }
 
-      "match:class ^(mpv)$, idle_inhibit focus"
-      "match:class ^(zen-beta)$, match:title ^(.*YouTube.*)$, idle_inhibit focus"
-      "match:class ^(zen)$, idle_inhibit fullscreen"
+      { name = "idle-mpv"; match.class = "^(mpv)$"; idle_inhibit = "focus"; }
+      { name = "idle-youtube"; match = { class = "^(zen-beta)$"; title = "^(.*YouTube.*)$"; }; idle_inhibit = "focus"; }
+      { name = "idle-zen-fs"; match.class = "^(zen)$"; idle_inhibit = "fullscreen"; }
 
-      "match:class ^(xdg-desktop-portal-gtk)$, dim_around on"
+      { name = "dim-portal"; match.class = "^(xdg-desktop-portal-gtk)$"; dim_around = true; }
 
-      "match:xwayland true, rounding 0"
+      { name = "xwayland-rounding"; match.xwayland = true; rounding = 0; }
 
       # No gaps when only
-      "border_size 0, match:float 0, match:workspace w[tv1]"
-      "rounding 0, match:float 0, match:workspace w[tv1]"
-      "border_size 0, match:float 0, match:workspace f[1]"
-      "rounding 0, match:float 0, match:workspace f[1]"
+      { name = "no-gaps-border-wtv1"; match = { float = false; workspace = "w[tv1]"; }; border_size = 0; }
+      { name = "no-gaps-rounding-wtv1"; match = { float = false; workspace = "w[tv1]"; }; rounding = 0; }
+      { name = "no-gaps-border-f1"; match = { float = false; workspace = "f[1]"; }; border_size = 0; }
+      { name = "no-gaps-rounding-f1"; match = { float = false; workspace = "f[1]"; }; rounding = 0; }
     ];
 
-    layerrule = [
-      "match:namespace rofi, dim_around on"
-      "match:namespace swaync-control-center, dim_around on"
+    layer_rule = [
+      { name = "dim-rofi"; match.namespace = "rofi"; dim_around = true; }
+      { name = "dim-swaync"; match.namespace = "swaync-control-center"; dim_around = true; }
     ];
 
     # No gaps when only
-    workspace = [
-      "w[tv1], gapsout:0, gapsin:0"
-      "f[1], gapsout:0, gapsin:0"
-      "1, gapsout:0, gapsin:0"
+    workspace_rule = [
+      { workspace = "w[tv1]"; gaps_out = 0; gaps_in = 0; }
+      { workspace = "f[1]"; gaps_out = 0; gaps_in = 0; }
+      { workspace = "1"; gaps_out = 0; gaps_in = 0; }
     ];
   };
 }

@@ -107,19 +107,19 @@ in
       format = "<span foreground='${green}'> </span> {usage}%";
       format-alt = "<span foreground='${green}'> </span> {avg_frequency} GHz";
       interval = 2;
-      on-click-right = "hyprctl dispatch exec '[float; center; size 1900 1300] kitty --override font_size=14 --title float_kitty btop'";
+      on-click-right = "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty --override font_size=14 --title float_kitty btop\", { float = true, center = true, size = \"1900 1300\" })'";
     };
     memory = {
       format = "<span foreground='${cyan}'>󰟜 </span>{used} GiB";
       format-alt = "<span foreground='${cyan}'>󰟜 </span>{}%";
       interval = 2;
-      on-click-right = "hyprctl dispatch exec '[float; center; size 1900 1300] kitty --override font_size=14 --title float_kitty btop'";
+      on-click-right = "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty --override font_size=14 --title float_kitty btop\", { float = true, center = true, size = \"1900 1300\" })'";
     };
     disk = {
       # path = "/";
       format = "<span foreground='${orange}'>󰋊 </span>{percentage_used}%";
       interval = 60;
-      on-click-right = "hyprctl dispatch exec '[float; center; size 1900 1300] kitty --override font_size=14 --title float_kitty btop'";
+      on-click-right = "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty --override font_size=14 --title float_kitty btop\", { float = true, center = true, size = \"1900 1300\" })'";
     };
     network = {
       format-wifi = "<span foreground='${magenta}'> </span> {signalStrength}%";
@@ -144,7 +144,7 @@ in
       on-click = "next-audio-sink";
       # ПКМ: открываем выбор устройства/настройки звука в увеличенном окне.
       on-click-right =
-        "hyprctl dispatch exec '[float; center; size 1600 1200] pavucontrol'";
+        "hyprctl dispatch 'hl.dsp.exec_cmd(\"pavucontrol\", { float = true, center = true, size = \"1600 1200\" })'";
     };
 
     # battery = {

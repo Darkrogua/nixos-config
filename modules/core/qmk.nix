@@ -7,6 +7,9 @@
     qmk-udev-rules
   ];
 
+  # 50-qmk.rules ставит GROUP="plugdev"; без группы udev орёт на каждое USB-событие
+  users.groups.plugdev = { };
+
   services.udev.packages = with pkgs; [
     via
     vial

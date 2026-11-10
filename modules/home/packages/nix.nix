@@ -18,7 +18,7 @@
     nvd                               # Nix/NixOS package version diff tool
     nix-du                            # Tool to determine which gc-roots take space in your nix store
     nix-btm                           # Bottom-like system monitor for nix
-    nix-web                           # Web interface for the Nix store
+    # nix-web — 0.4.2 не линкуется в nixpkgs (sqlx/sqlite3); вернуть после фикса upstream
     nix-tree                          # Interactively browse a Nix store paths dependencies
     nix-melt                          # Ranger-like flake.lock viewer
     nix-output-monitor                # Processes output of Nix commands to show helpful and pretty information

@@ -1,144 +1,143 @@
-{ ... }:
+{ lib, ... }:
+let
+  inherit (lib.generators) mkLuaInline;
+  luaStr = s: "\"" + lib.replaceStrings [ "\\" "\"" ] [ "\\\\" "\\\"" ] s + "\"";
+  exec = cmd: "hl.dsp.exec_cmd(${luaStr cmd})";
+  execRules = cmd: rules: "hl.dsp.exec_cmd(${luaStr cmd}, ${rules})";
+  bind = keys: dsp: { _args = [ keys (mkLuaInline dsp) ]; };
+  bindOpts = keys: dsp: opts: { _args = [ keys (mkLuaInline dsp) opts ]; };
+in
 {
   wayland.windowManager.hyprland.settings = {
-    binds = {
-      scroll_event_delay = 100;
-      movefocus_cycles_fullscreen = true;
-    };
-
     bind = [
       # show keybinds list
-      "$mod, F1, exec, show-keybinds"
+      (bind "SUPER + F1" (exec "show-keybinds"))
 
       # keybindings
-      "$mod, Return, exec, ghostty --gtk-single-instance=true"
-      "ALT, Return, exec, [float; size 1111 700] ghostty"
-      "$mod SHIFT, Return, exec, [fullscreen] ghostty"
-      "$mod, B, exec, [workspace 1 silent] zen-beta"
-      "$mod, Q, killactive,"
-      "$mod, F, fullscreen, 0"
-      "$mod SHIFT, F, fullscreen, 1"
-      "$mod, Space, exec, toggle-float"
-      "$mod, D, exec, toggle-rofi rofi -show drun"
-      "$mod SHIFT, D, exec, vesktop --enable-features=UseOzonePlatform --ozone-platform=wayland"
-      "$mod SHIFT, S, exec, hyprctl dispatch exec '[workspace 5 silent] SoundWireServer'"
-      "$mod, Escape, exec, swaylock"
-      "ALT, Escape, exec, loginctl lock-session"
-      "$mod SHIFT, Escape, exec, power-menu"
-      "$mod, P, pseudo,"
-      "$mod SHIFT, P, exec, pass-menu"
+      (bind "SUPER + Return" (exec "ghostty --gtk-single-instance=true"))
+      (bind "ALT + Return" (execRules "ghostty" "{ float = true, size = \"1111 700\" }"))
+      (bind "SUPER + SHIFT + Return" (execRules "ghostty" "{ fullscreen = true }"))
+      (bind "SUPER + B" (execRules "zen-beta" "{ workspace = 1, silent = true }"))
+      (bind "SUPER + Q" "hl.dsp.window.close()")
+      (bind "SUPER + F" "hl.dsp.window.fullscreen({ mode = \"fullscreen\" })")
+      (bind "SUPER + SHIFT + F" "hl.dsp.window.fullscreen({ mode = \"maximized\" })")
+      (bind "SUPER + Space" (exec "toggle-float"))
+      (bind "SUPER + D" (exec "toggle-rofi rofi -show drun"))
+      (bind "SUPER + SHIFT + D" (exec "vesktop --enable-features=UseOzonePlatform --ozone-platform=wayland"))
+      (bind "SUPER + SHIFT + S" (execRules "SoundWireServer" "{ workspace = 5, silent = true }"))
+      (bind "SUPER + Escape" (exec "swaylock"))
+      (bind "ALT + Escape" (exec "loginctl lock-session"))
+      (bind "SUPER + SHIFT + Escape" (exec "power-menu"))
+      (bind "SUPER + P" "hl.dsp.window.pseudo()")
+      (bind "SUPER + SHIFT + P" (exec "pass-menu"))
       # Hyprland 0.55+: togglesplit только через layoutmsg
-      "$mod, X, layoutmsg, togglesplit"
-      "$mod, T, exec, toggle-oppacity"
-      "$mod, E, exec, nemo"
-      "ALT, E, exec, hyprctl dispatch exec '[float; size 1111 700] nemo'"
-      "$mod SHIFT, B, exec, toggle-waybar"
-      "$mod, C ,exec, hyprpicker -a"
-      "$mod, W,exec, wallpaper-picker"
-      "$mod SHIFT, W,exec, hyprctl dispatch exec '[float; size 925 615] waypaper'"
-      "$mod, N, exec, swaync-client -t -sw"
-      "CTRL SHIFT, Escape, exec, hyprctl dispatch exec '[workspace 9] missioncenter'"
-      "$mod, equal, exec, woomer"
-      # "$mod SHIFT, W, exec, vm-start"
+      (bind "SUPER + X" "hl.dsp.layout(\"togglesplit\")")
+      (bind "SUPER + T" (exec "toggle-oppacity"))
+      (bind "SUPER + E" (exec "nemo"))
+      (bind "ALT + E" (execRules "nemo" "{ float = true, size = \"1111 700\" }"))
+      (bind "SUPER + SHIFT + B" (exec "toggle-waybar"))
+      (bind "SUPER + C" (exec "hyprpicker -a"))
+      (bind "SUPER + W" (exec "wallpaper-picker"))
+      (bind "SUPER + SHIFT + W" (execRules "waypaper" "{ float = true, size = \"925 615\" }"))
+      (bind "SUPER + N" (exec "swaync-client -t -sw"))
+      (bind "CTRL + SHIFT + Escape" (execRules "missioncenter" "{ workspace = 9 }"))
+      (bind "SUPER + equal" (exec "woomer"))
 
       # screenshot
-      ",Print, exec, screenshot --copy"
-      "$mod, Print, exec, screenshot --save"
-      "$mod SHIFT, Print, exec, screenshot --swappy"
+      (bind "Print" (exec "screenshot --copy"))
+      (bind "SUPER + Print" (exec "screenshot --save"))
+      (bind "SUPER + SHIFT + Print" (exec "screenshot --swappy"))
 
       # switch focus
-      "$mod, left,  movefocus, l"
-      "$mod, right, movefocus, r"
-      "$mod, up,    movefocus, u"
-      "$mod, down,  movefocus, d"
-      "$mod, h, movefocus, l"
-      "$mod, j, movefocus, d"
-      "$mod, k, movefocus, u"
-      # сон (Mod+L) — как «Сон» в waybar: блокировка и suspend
-      "$mod, code:46, exec, sh -c 'loginctl lock-session; sleep 1; systemctl suspend'"
+      (bind "SUPER + left" "hl.dsp.focus({ direction = \"left\" })")
+      (bind "SUPER + right" "hl.dsp.focus({ direction = \"right\" })")
+      (bind "SUPER + up" "hl.dsp.focus({ direction = \"up\" })")
+      (bind "SUPER + down" "hl.dsp.focus({ direction = \"down\" })")
+      (bind "SUPER + h" "hl.dsp.focus({ direction = \"left\" })")
+      (bind "SUPER + j" "hl.dsp.focus({ direction = \"down\" })")
+      (bind "SUPER + k" "hl.dsp.focus({ direction = \"up\" })")
+      # сон (Mod+L) — lock до появления hyprlock, потом suspend
+      (bind "SUPER + code:46" (exec "sh -c 'hypr-sleep prepare; systemctl suspend'"))
 
-      "$mod, left,  alterzorder, top"
-      "$mod, right, alterzorder, top"
-      "$mod, up,    alterzorder, top"
-      "$mod, down,  alterzorder, top"
-      "$mod, h, alterzorder, top"
-      "$mod, j, alterzorder, top"
-      "$mod, k, alterzorder, top"
+      (bind "SUPER + left" "hl.dsp.window.alter_zorder({ mode = \"top\" })")
+      (bind "SUPER + right" "hl.dsp.window.alter_zorder({ mode = \"top\" })")
+      (bind "SUPER + up" "hl.dsp.window.alter_zorder({ mode = \"top\" })")
+      (bind "SUPER + down" "hl.dsp.window.alter_zorder({ mode = \"top\" })")
+      (bind "SUPER + h" "hl.dsp.window.alter_zorder({ mode = \"top\" })")
+      (bind "SUPER + j" "hl.dsp.window.alter_zorder({ mode = \"top\" })")
+      (bind "SUPER + k" "hl.dsp.window.alter_zorder({ mode = \"top\" })")
 
-      "CTRL ALT, up, exec, hyprctl dispatch focuswindow floating"
-      "CTRL ALT, down, exec, hyprctl dispatch focuswindow tiled"
+      (bind "CTRL + ALT + up" "hl.dsp.focus({ window = \"floating\" })")
+      (bind "CTRL + ALT + down" "hl.dsp.focus({ window = \"tiled\" })")
 
       # switch workspace
-      "$mod, 1, workspace, 1"
-      "$mod, 2, workspace, 2"
-      "$mod, 3, workspace, 3"
-      "$mod, 4, workspace, 4"
-      "$mod, 5, workspace, 5"
-      "$mod, 6, workspace, 6"
-      "$mod, 7, workspace, 7"
-      "$mod, 8, workspace, 8"
-      "$mod, 9, workspace, 9"
-      "$mod, 0, workspace, 10"
+      (bind "SUPER + 1" "hl.dsp.focus({ workspace = 1 })")
+      (bind "SUPER + 2" "hl.dsp.focus({ workspace = 2 })")
+      (bind "SUPER + 3" "hl.dsp.focus({ workspace = 3 })")
+      (bind "SUPER + 4" "hl.dsp.focus({ workspace = 4 })")
+      (bind "SUPER + 5" "hl.dsp.focus({ workspace = 5 })")
+      (bind "SUPER + 6" "hl.dsp.focus({ workspace = 6 })")
+      (bind "SUPER + 7" "hl.dsp.focus({ workspace = 7 })")
+      (bind "SUPER + 8" "hl.dsp.focus({ workspace = 8 })")
+      (bind "SUPER + 9" "hl.dsp.focus({ workspace = 9 })")
+      (bind "SUPER + 0" "hl.dsp.focus({ workspace = 10 })")
 
       # same as above, but switch to the workspace
-      "$mod SHIFT, 1, movetoworkspacesilent, 1" # movetoworkspacesilent
-      "$mod SHIFT, 2, movetoworkspacesilent, 2"
-      "$mod SHIFT, 3, movetoworkspacesilent, 3"
-      "$mod SHIFT, 4, movetoworkspacesilent, 4"
-      "$mod SHIFT, 5, movetoworkspacesilent, 5"
-      "$mod SHIFT, 6, movetoworkspacesilent, 6"
-      "$mod SHIFT, 7, movetoworkspacesilent, 7"
-      "$mod SHIFT, 8, movetoworkspacesilent, 8"
-      "$mod SHIFT, 9, movetoworkspacesilent, 9"
-      "$mod SHIFT, 0, movetoworkspacesilent, 10"
-      "$mod CTRL, c, movetoworkspace, empty"
+      (bind "SUPER + SHIFT + 1" "hl.dsp.window.move({ workspace = 1, silent = true })")
+      (bind "SUPER + SHIFT + 2" "hl.dsp.window.move({ workspace = 2, silent = true })")
+      (bind "SUPER + SHIFT + 3" "hl.dsp.window.move({ workspace = 3, silent = true })")
+      (bind "SUPER + SHIFT + 4" "hl.dsp.window.move({ workspace = 4, silent = true })")
+      (bind "SUPER + SHIFT + 5" "hl.dsp.window.move({ workspace = 5, silent = true })")
+      (bind "SUPER + SHIFT + 6" "hl.dsp.window.move({ workspace = 6, silent = true })")
+      (bind "SUPER + SHIFT + 7" "hl.dsp.window.move({ workspace = 7, silent = true })")
+      (bind "SUPER + SHIFT + 8" "hl.dsp.window.move({ workspace = 8, silent = true })")
+      (bind "SUPER + SHIFT + 9" "hl.dsp.window.move({ workspace = 9, silent = true })")
+      (bind "SUPER + SHIFT + 0" "hl.dsp.window.move({ workspace = 10, silent = true })")
+      (bind "SUPER + CTRL + c" "hl.dsp.window.move({ workspace = \"empty\" })")
 
       # window control
-      "$mod SHIFT, left, movewindow, l"
-      "$mod SHIFT, right, movewindow, r"
-      "$mod SHIFT, up, movewindow, u"
-      "$mod SHIFT, down, movewindow, d"
-      "$mod SHIFT, h, movewindow, l"
-      "$mod SHIFT, j, movewindow, d"
-      "$mod SHIFT, k, movewindow, u"
-      "$mod SHIFT, l, movewindow, r"
+      (bind "SUPER + SHIFT + left" "hl.dsp.window.move({ direction = \"left\" })")
+      (bind "SUPER + SHIFT + right" "hl.dsp.window.move({ direction = \"right\" })")
+      (bind "SUPER + SHIFT + up" "hl.dsp.window.move({ direction = \"up\" })")
+      (bind "SUPER + SHIFT + down" "hl.dsp.window.move({ direction = \"down\" })")
+      (bind "SUPER + SHIFT + h" "hl.dsp.window.move({ direction = \"left\" })")
+      (bind "SUPER + SHIFT + j" "hl.dsp.window.move({ direction = \"down\" })")
+      (bind "SUPER + SHIFT + k" "hl.dsp.window.move({ direction = \"up\" })")
+      (bind "SUPER + SHIFT + l" "hl.dsp.window.move({ direction = \"right\" })")
 
-      "$mod CTRL, left, resizeactive, -80 0"
-      "$mod CTRL, right, resizeactive, 80 0"
-      "$mod CTRL, up, resizeactive, 0 -80"
-      "$mod CTRL, down, resizeactive, 0 80"
-      "$mod CTRL, h, resizeactive, -80 0"
-      "$mod CTRL, j, resizeactive, 0 80"
-      "$mod CTRL, k, resizeactive, 0 -80"
-      "$mod CTRL, l, resizeactive, 80 0"
+      (bind "SUPER + CTRL + left" "hl.dsp.window.resize({ x = -80, y = 0, relative = true })")
+      (bind "SUPER + CTRL + right" "hl.dsp.window.resize({ x = 80, y = 0, relative = true })")
+      (bind "SUPER + CTRL + up" "hl.dsp.window.resize({ x = 0, y = -80, relative = true })")
+      (bind "SUPER + CTRL + down" "hl.dsp.window.resize({ x = 0, y = 80, relative = true })")
+      (bind "SUPER + CTRL + h" "hl.dsp.window.resize({ x = -80, y = 0, relative = true })")
+      (bind "SUPER + CTRL + j" "hl.dsp.window.resize({ x = 0, y = 80, relative = true })")
+      (bind "SUPER + CTRL + k" "hl.dsp.window.resize({ x = 0, y = -80, relative = true })")
+      (bind "SUPER + CTRL + l" "hl.dsp.window.resize({ x = 0, y = 80, relative = true })")
 
-      "$mod ALT, left, moveactive,  -80 0"
-      "$mod ALT, right, moveactive, 80 0"
-      "$mod ALT, up, moveactive, 0 -80"
-      "$mod ALT, down, moveactive, 0 80"
-      "$mod ALT, h, moveactive,  -80 0"
-      "$mod ALT, j, moveactive, 0 80"
-      "$mod ALT, k, moveactive, 0 -80"
-      "$mod ALT, l, moveactive, 80 0"
+      (bind "SUPER + ALT + left" "hl.dsp.window.move({ x = -80, y = 0, relative = true })")
+      (bind "SUPER + ALT + right" "hl.dsp.window.move({ x = 80, y = 0, relative = true })")
+      (bind "SUPER + ALT + up" "hl.dsp.window.move({ x = 0, y = -80, relative = true })")
+      (bind "SUPER + ALT + down" "hl.dsp.window.move({ x = 0, y = 80, relative = true })")
+      (bind "SUPER + ALT + h" "hl.dsp.window.move({ x = -80, y = 0, relative = true })")
+      (bind "SUPER + ALT + j" "hl.dsp.window.move({ x = 0, y = 80, relative = true })")
+      (bind "SUPER + ALT + k" "hl.dsp.window.move({ x = 0, y = -80, relative = true })")
+      (bind "SUPER + ALT + l" "hl.dsp.window.move({ x = 0, y = 80, relative = true })")
 
       # media and volume controls
-      # ",XF86AudioMute,exec, pamixer -t"
-      ",XF86AudioPlay,exec, playerctl play-pause"
-      ",XF86AudioNext,exec, playerctl next"
-      ",XF86AudioPrev,exec, playerctl previous"
-      ",XF86AudioStop,exec, playerctl stop"
+      (bind "XF86AudioPlay" (exec "playerctl play-pause"))
+      (bind "XF86AudioNext" (exec "playerctl next"))
+      (bind "XF86AudioPrev" (exec "playerctl previous"))
+      (bind "XF86AudioStop" (exec "playerctl stop"))
 
-      "$mod, mouse_down, workspace, e-1"
-      "$mod, mouse_up, workspace, e+1"
+      (bind "SUPER + mouse_down" "hl.dsp.focus({ workspace = \"e-1\" })")
+      (bind "SUPER + mouse_up" "hl.dsp.focus({ workspace = \"e+1\" })")
 
       # clipboard manager
-      "$mod, V, exec, toggle-rofi \"cliphist list | rofi -dmenu -theme-str 'window {width: 50%;} listview {columns: 1;}' | cliphist decode | wl-copy\""
-    ];
+      (bind "SUPER + V" (exec "toggle-rofi \"cliphist list | rofi -dmenu -theme-str 'window {width: 50%;} listview {columns: 1;}' | cliphist decode | wl-copy\""))
 
-    # mouse binding
-    bindm = [
-      "$mod, mouse:272, movewindow"
-      "$mod, mouse:273, resizewindow"
+      # mouse binding (from bindm)
+      (bindOpts "SUPER + mouse:272" "hl.dsp.window.drag()" { mouse = true; })
+      (bindOpts "SUPER + mouse:273" "hl.dsp.window.resize()" { mouse = true; })
     ];
   };
 }

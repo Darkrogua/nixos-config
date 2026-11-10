@@ -5,6 +5,10 @@
 
     enableDefaultConfig = false;
 
+    # Локальные хосты без пересборки NixOS:
+    #   ~/.ssh/config.d/*.conf
+    includes = [ "~/.ssh/config.d/*.conf" ];
+
     # RFC 42: settings вместо deprecated matchBlocks
     settings = {
       "*" = {
@@ -57,10 +61,7 @@
         IdentitiesOnly = true;
       };
 
-      "192.168.2.89" = {
-        IdentityFile = "~/.ssh/keys/hdocker/id_ed25519";
-        IdentitiesOnly = true;
-      };
+      # hdocker — в ~/.ssh/config.d/hdocker.conf (без nh)
 
       "192.168.2.79" = {
         IdentityFile = "~/.ssh/keys/hnextcloud/id_ed25519";

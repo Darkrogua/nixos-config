@@ -24,6 +24,7 @@
     glab                              # GitLab CLI
     hashcat                           # GPU/CPU WPA & other hashes; -m 22000 for .hc22000
     hcxtools                          # hcxpcapngtool etc.: pcap/hccapx → hc22000
+    hcxdumptool                       # clientless PMKID / EAPOL capture (hashcat -m 22000)
     crunch                            # генерит словари по длине и набору символов (PIN/цифры)
     aircrack-ng                       # airmon-ng, airodump-ng, aireplay-ng
     reaverwps                         # reaver + wash (WPS PIN / Pixie-Dust)
@@ -32,7 +33,7 @@
     pixiewps                          # Pixie-Dust offline (доп. к reaver -K)
     hyperfine                         # benchmarking tool
     pastel                            # cli to manipulate colors
-    scooter                           # Interactive find and replace in the terminal
+    # scooter — 0.10.0 не собирается в nixpkgs (onig_sys/pkg-config); вернуть после фикса upstream
     swappy                            # snapshot editing tool
     tdf                               # cli pdf viewer
     tokei                             # project line counter
