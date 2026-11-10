@@ -48,6 +48,9 @@ in
       (bind "SUPER + Print" (exec "screenshot --save"))
       (bind "SUPER + SHIFT + Print" (exec "screenshot --swappy"))
 
+      # screen recording (focused monitor + mic + desktop audio)
+      (bind "SUPER + SHIFT + R" (exec "toggle-screen-record"))
+
       # switch focus
       (bind "SUPER + left" "hl.dsp.focus({ direction = \"left\" })")
       (bind "SUPER + right" "hl.dsp.focus({ direction = \"right\" })")

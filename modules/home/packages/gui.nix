@@ -8,6 +8,7 @@
     media-downloader
     qbittorrent
     obs-studio
+    gpu-screen-recorder-gtk
     pavucontrol
     soundwireserver
     video-trimmer

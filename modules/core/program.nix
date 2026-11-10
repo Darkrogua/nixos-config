@@ -14,5 +14,8 @@
 
     nix-ld.enable = true;
     nix-ld.libraries = with pkgs; [ ];
+
+    # CLI + setcap wrapper for gsr-kms-server (KMS capture on Wayland).
+    gpu-screen-recorder.enable = true;
   };
 }
