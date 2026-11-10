@@ -74,6 +74,10 @@ struct Args {
     /// Путь к config.toml (по умолчанию ~/.config/yeelight-music/config.toml)
     #[arg(long)]
     config: Option<PathBuf>,
+
+    /// Только выключить RGB-подсветку и выйти (без захвата звука)
+    #[arg(long)]
+    off: bool,
 }
 
 fn apply_cli(mut cfg: AppConfig, args: &Args) -> AppConfig {
@@ -216,6 +220,68 @@ fn transition_ms(music: bool, smoothness: f32) -> u32 {
     }
 }
 
+fn stopped() -> bool {
+    STOP.load(Ordering::Relaxed)
+}
+
+/// Retry until the lamp/Wi-Fi is reachable, or until SIGTERM/SIGINT.
+fn connect_with_retry(ip: &str, port: u16, max_wait: Option<Duration>) -> Result<Lamp> {
+    let mut delay = Duration::from_secs(1);
+    let mut attempt = 0u32;
+    let start = Instant::now();
+    loop {
+        if stopped() {
+            return Err(anyhow::anyhow!("stopped before connecting to the lamp"));
+        }
+        if let Some(limit) = max_wait {
+            if start.elapsed() >= limit {
+                return Err(anyhow::anyhow!("timed out connecting to {ip}:{port}"));
+            }
+        }
+        attempt += 1;
+        match Lamp::connect(ip, port) {
+            Ok(lamp) => {
+                if attempt > 1 {
+                    eprintln!("yeelight-music: connected to {ip}:{port} on attempt {attempt}");
+                }
+                return Ok(lamp);
+            }
+            Err(e) => {
+                eprintln!(
+                    "yeelight-music: connect {ip}:{port} failed (attempt {attempt}): {e}; retry in {delay:?}"
+                );
+                let until = Instant::now() + delay;
+                while Instant::now() < until {
+                    if stopped() {
+                        return Err(anyhow::anyhow!("stopped before connecting to the lamp"));
+                    }
+                    thread::sleep(Duration::from_millis(100));
+                }
+                delay = (delay * 2).min(Duration::from_secs(10));
+            }
+        }
+    }
+}
+
+fn ensure_bg_on_retry(lamp: &mut Lamp) -> Result<()> {
+    let mut delay = Duration::from_millis(400);
+    let mut attempt = 0u32;
+    loop {
+        if stopped() {
+            return Err(anyhow::anyhow!("stopped before bg_set_power on"));
+        }
+        attempt += 1;
+        match lamp.ensure_bg_on() {
+            Ok(()) => return Ok(()),
+            Err(e) => {
+                eprintln!("yeelight-music: bg_set_power on failed (attempt {attempt}): {e}");
+                thread::sleep(delay);
+                delay = (delay * 2).min(Duration::from_secs(5));
+            }
+        }
+    }
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
     install_signals();
@@ -237,11 +303,31 @@ fn main() -> Result<()> {
         cfg.smoothness
     );
 
+    if args.off {
+        let mut lamp = connect_with_retry(&cfg.ip, cfg.port, Some(Duration::from_secs(8)))
+            .context("connect for --off")?;
+        lamp.turn_bg_off().context("bg_set_power off")?;
+        eprintln!("yeelight-music: --off done");
+        return Ok(());
+    }
+
     let running = Arc::new(AtomicBool::new(true));
 
-    let mut lamp = Lamp::connect(&cfg.ip, cfg.port)
-        .with_context(|| format!("connect {}:{}", cfg.ip, cfg.port))?;
-    lamp.ensure_bg_on().context("bg_set_power on")?;
+    let mut lamp = match connect_with_retry(&cfg.ip, cfg.port, None) {
+        Ok(l) => l,
+        Err(e) if stopped() => {
+            eprintln!("yeelight-music: {e}");
+            return Ok(());
+        }
+        Err(e) => return Err(e),
+    };
+    if let Err(e) = ensure_bg_on_retry(&mut lamp) {
+        eprintln!("yeelight-music: {e}");
+        if let Err(off_err) = lamp.turn_bg_off() {
+            eprintln!("yeelight-music: bg_set_power off failed: {off_err}");
+        }
+        return Ok(());
+    }
     eprintln!("yeelight-music: background RGB light on");
 
     let music = lamp
@@ -290,8 +376,10 @@ fn main() -> Result<()> {
                 Ok(sp) => latest = sp,
                 Err(mpsc::RecvTimeoutError::Timeout) => {}
                 Err(mpsc::RecvTimeoutError::Disconnected) => {
-                    eprintln!("yeelight-music: audio thread ended");
-                    break;
+                    // capture_loop retries internally; if it still ended, wait and continue
+                    // until SIGTERM rather than leaving the process.
+                    eprintln!("yeelight-music: audio thread ended; waiting for stop or restart");
+                    thread::sleep(Duration::from_millis(500));
                 }
             }
         }

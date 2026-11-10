@@ -105,21 +105,21 @@ pub fn capture_loop(running: Arc<AtomicBool>, tx: Sender<Spectrum>) {
         })
         .collect();
 
-    let mut monitor = match default_sink_monitor() {
-        Ok(m) => {
-            eprintln!("yeelight-music: capturing {m}");
-            m
-        }
-        Err(e) => {
-            eprintln!("yeelight-music: cannot resolve default sink monitor: {e}");
+    let mut delay = std::time::Duration::from_millis(500);
+    let (mut monitor, mut simple) = loop {
+        if !running.load(Ordering::Relaxed) {
             return;
         }
-    };
-    let mut simple = match open_capture(&monitor) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("yeelight-music: cannot open capture: {e}");
-            return;
+        match default_sink_monitor().and_then(|m| open_capture(&m).map(|s| (m, s))) {
+            Ok(pair) => {
+                eprintln!("yeelight-music: capturing {}", pair.0);
+                break pair;
+            }
+            Err(e) => {
+                eprintln!("yeelight-music: audio not ready: {e}; retry in {delay:?}");
+                std::thread::sleep(delay);
+                delay = (delay * 2).min(std::time::Duration::from_secs(8));
+            }
         }
     };
 

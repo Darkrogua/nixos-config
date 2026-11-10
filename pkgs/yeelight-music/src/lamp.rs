@@ -9,11 +9,12 @@
 use anyhow::{anyhow, Context, Result};
 use serde_json::{json, Value};
 use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::net::{Shutdown, TcpListener, TcpStream};
 use std::time::{Duration, Instant};
 
 const CONNECT_GRACE: Duration = Duration::from_millis(150);
 const CMD_TIMEOUT: Duration = Duration::from_secs(8);
+const OFF_CMD_TIMEOUT: Duration = Duration::from_secs(2);
 const QUOTA_PER_MIN: f64 = 58.0;
 
 pub struct Lamp {
@@ -276,35 +277,176 @@ impl Lamp {
         }
     }
 
-    /// Turn the RGB backlight off. Does not touch the main white light.
-    /// Uses a fresh socket so a quota-exhausted connection cannot block this.
+    /// Turn the RGB backlight off. Never opens a third TCP socket while the
+    /// pool still holds the lamp's two slots. Does not touch the main light.
     pub fn turn_bg_off(&mut self) -> Result<()> {
         if self.music_enabled {
-            let _ = self.rpc_first("set_music", json!([0]));
+            let _ = self.rpc_existing("set_music", json!([0]), OFF_CMD_TIMEOUT);
             self.music_enabled = false;
-            self.music = None;
-            // Music teardown may close sockets.
-            self.pool.clear();
+        }
+        if let Some(stream) = self.music.take() {
+            let _ = stream.shutdown(Shutdown::Both);
+            drop(stream);
         }
 
-        match open_stream(&self.ip, self.port) {
-            Ok(stream) => {
-                self.pool.clear();
-                self.pool.push(Pooled {
-                    stream,
-                    quota: Quota::new(),
-                });
+        if !self.pool.is_empty() {
+            match self.try_power_off_on_pool() {
+                Ok(()) => {
+                    eprintln!("yeelight-music: bg_power off (existing connection)");
+                    self.close_all();
+                    return Ok(());
+                }
+                Err(e) => {
+                    eprintln!("yeelight-music: off via existing connection failed: {e}");
+                }
             }
+        }
+
+        let mut delay_ms = 500u64;
+        for attempt in 1..=5 {
+            self.close_all();
+            std::thread::sleep(Duration::from_millis(delay_ms));
+            match self.reconnect_one() {
+                Ok(()) => match self.try_power_off_fresh() {
+                    Ok(()) => {
+                        eprintln!("yeelight-music: bg_power off (attempt {attempt})");
+                        self.close_all();
+                        return Ok(());
+                    }
+                    Err(e) => {
+                        eprintln!("yeelight-music: bg off attempt {attempt} failed: {e}");
+                    }
+                },
+                Err(e) => {
+                    eprintln!("yeelight-music: reconnect for off attempt {attempt} failed: {e}");
+                }
+            }
+            delay_ms = (delay_ms + 300).min(1500);
+        }
+        Err(anyhow!("failed to turn bg off after retries"))
+    }
+
+    fn close_all(&mut self) {
+        if let Some(stream) = self.music.take() {
+            let _ = stream.shutdown(Shutdown::Both);
+            drop(stream);
+        }
+        self.music_enabled = false;
+        for pooled in self.pool.drain(..) {
+            let _ = pooled.stream.shutdown(Shutdown::Both);
+            drop(pooled);
+        }
+    }
+
+    fn reconnect_one(&mut self) -> Result<()> {
+        if !self.pool.is_empty() || self.music.is_some() {
+            self.close_all();
+        }
+        let stream = open_stream(&self.ip, self.port)?;
+        self.pool.push(Pooled {
+            stream,
+            quota: Quota::new(),
+        });
+        Ok(())
+    }
+
+    fn best_quota_idx(&mut self) -> Option<usize> {
+        self.pool
+            .iter_mut()
+            .enumerate()
+            .map(|(i, p)| {
+                p.quota.refill();
+                (i, p.quota.tokens)
+            })
+            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+            .and_then(|(i, tokens)| if tokens >= 1.0 { Some(i) } else { None })
+    }
+
+    fn rpc_existing(&mut self, method: &str, params: Value, timeout: Duration) -> Result<Value> {
+        let idx = self
+            .best_quota_idx()
+            .ok_or_else(|| anyhow!("no LAN connection with remaining quota"))?;
+        let _ = self.pool[idx].quota.try_take();
+        let id = self.alloc_id();
+        let payload = json!({"id": id, "method": method, "params": params});
+        match rpc_on(&mut self.pool[idx].stream, id, &payload, timeout) {
+            Ok(v) => {
+                if let Some(err) = v.get("error") {
+                    let msg = err
+                        .get("message")
+                        .and_then(|m| m.as_str())
+                        .unwrap_or("");
+                    if msg.contains("quota") {
+                        self.pool[idx].quota.exhausted();
+                    }
+                    return Err(anyhow!("{method} error: {err}"));
+                }
+                Ok(v)
+            }
+            Err(e) => {
+                self.pool.remove(idx);
+                Err(e)
+            }
+        }
+    }
+
+    fn bg_is_off(&mut self) -> bool {
+        match self.rpc_existing("get_prop", json!(["bg_power"]), OFF_CMD_TIMEOUT) {
+            Ok(resp) => {
+                resp.get("result")
+                    .and_then(|r| r.as_array())
+                    .and_then(|a| a.first())
+                    .and_then(|v| v.as_str())
+                    == Some("off")
+            }
+            Err(e) => {
+                eprintln!("yeelight-music: get_prop bg_power failed: {e}");
+                false
+            }
+        }
+    }
+
+    fn try_power_off_on_pool(&mut self) -> Result<()> {
+        if self.pool.is_empty() {
+            return Err(anyhow!("no existing connections"));
+        }
+        match self.rpc_existing("bg_stop_cf", json!([]), OFF_CMD_TIMEOUT) {
+            Ok(_) => {}
             Err(e) => {
                 if self.pool.is_empty() {
                     return Err(e);
                 }
-                eprintln!("yeelight-music: fresh off socket failed ({e}), reusing pool");
+                // Method/quota error but the socket is still up — continue.
+                eprintln!("yeelight-music: bg_stop_cf: {e}");
             }
         }
+        self.rpc_existing(
+            "bg_set_power",
+            json!(["off", "sudden", 0]),
+            OFF_CMD_TIMEOUT,
+        )?;
+        if self.bg_is_off() {
+            Ok(())
+        } else {
+            Err(anyhow!("bg_power still on after bg_set_power"))
+        }
+    }
 
-        self.rpc_first("bg_set_power", json!(["off", "smooth", 400]))?;
-        Ok(())
+    /// After a full reconnect the colour flow is already gone; only power off + verify.
+    fn try_power_off_fresh(&mut self) -> Result<()> {
+        if self.pool.is_empty() {
+            return Err(anyhow!("reconnect produced no connection"));
+        }
+        self.rpc_existing(
+            "bg_set_power",
+            json!(["off", "sudden", 0]),
+            OFF_CMD_TIMEOUT,
+        )?;
+        if self.bg_is_off() {
+            Ok(())
+        } else {
+            Err(anyhow!("bg_power still on after bg_set_power"))
+        }
     }
 
     pub fn pool_len(&self) -> usize {
