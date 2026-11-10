@@ -16,13 +16,6 @@ const CONNECT_GRACE: Duration = Duration::from_millis(150);
 const CMD_TIMEOUT: Duration = Duration::from_secs(8);
 const QUOTA_PER_MIN: f64 = 58.0;
 
-#[derive(Clone, Debug)]
-pub struct BgState {
-    pub power: String,
-    pub rgb: u32,
-    pub bright: u32,
-}
-
 pub struct Lamp {
     ip: String,
     port: u16,
@@ -175,31 +168,6 @@ impl Lamp {
         Ok(false)
     }
 
-    pub fn get_bg_state(&mut self) -> Result<BgState> {
-        let keys = ["bg_power", "bg_rgb", "bg_bright"];
-        let resp = self.rpc_first("get_prop", json!(keys))?;
-        let result = resp
-            .get("result")
-            .and_then(|v| v.as_array())
-            .ok_or_else(|| anyhow!("get_prop: no result: {resp}"))?;
-        if result.len() < 3 {
-            return Err(anyhow!("get_prop: short result: {resp}"));
-        }
-        let power = result[0].as_str().unwrap_or("on").to_string();
-        let rgb = result[1]
-            .as_str()
-            .unwrap_or("0")
-            .parse::<u32>()
-            .unwrap_or(0);
-        let bright = result[2]
-            .as_str()
-            .unwrap_or("100")
-            .parse::<u32>()
-            .unwrap_or(100)
-            .clamp(1, 100);
-        Ok(BgState { power, rgb, bright })
-    }
-
     pub fn ensure_bg_on(&mut self) -> Result<()> {
         self.rpc_first("bg_set_power", json!(["on", "smooth", 300]))?;
         Ok(())
@@ -308,17 +276,17 @@ impl Lamp {
         }
     }
 
-    pub fn restore(&mut self, state: &BgState) -> Result<()> {
+    /// Turn the RGB backlight off. Does not touch the main white light.
+    /// Uses a fresh socket so a quota-exhausted connection cannot block this.
+    pub fn turn_bg_off(&mut self) -> Result<()> {
         if self.music_enabled {
             let _ = self.rpc_first("set_music", json!([0]));
             self.music_enabled = false;
             self.music = None;
-            // Music teardown may close sockets; rebuild a fresh one for restore.
+            // Music teardown may close sockets.
             self.pool.clear();
         }
 
-        // Prefer a brand-new connection so a quota-exhausted socket cannot
-        // prevent us from putting the lamp back.
         match open_stream(&self.ip, self.port) {
             Ok(stream) => {
                 self.pool.clear();
@@ -331,18 +299,11 @@ impl Lamp {
                 if self.pool.is_empty() {
                     return Err(e);
                 }
-                eprintln!("yeelight-music: fresh restore socket failed ({e}), reusing pool");
+                eprintln!("yeelight-music: fresh off socket failed ({e}), reusing pool");
             }
         }
 
-        if state.power == "off" {
-            self.rpc_first("bg_set_power", json!(["off", "smooth", 400]))?;
-        } else {
-            self.rpc_first(
-                "bg_set_scene",
-                json!(["color", state.rgb, state.bright.clamp(1, 100)]),
-            )?;
-        }
+        self.rpc_first("bg_set_power", json!(["off", "smooth", 400]))?;
         Ok(())
     }
 

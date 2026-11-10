@@ -10,7 +10,7 @@ use anyhow::{Context, Result};
 use audio::Spectrum;
 use clap::Parser;
 use config::AppConfig;
-use lamp::{BgState, Lamp};
+use lamp::Lamp;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
@@ -241,14 +241,8 @@ fn main() -> Result<()> {
 
     let mut lamp = Lamp::connect(&cfg.ip, cfg.port)
         .with_context(|| format!("connect {}:{}", cfg.ip, cfg.port))?;
-    let saved: BgState = lamp.get_bg_state().context("read initial bg state")?;
-    eprintln!(
-        "yeelight-music: saved bg_power={} bg_rgb={} bg_bright={}",
-        saved.power, saved.rgb, saved.bright
-    );
-    if saved.power != "on" {
-        lamp.ensure_bg_on().context("bg_set_power on")?;
-    }
+    lamp.ensure_bg_on().context("bg_set_power on")?;
+    eprintln!("yeelight-music: background RGB light on");
 
     let music = lamp
         .try_music_mode(&cfg.bind, cfg.music_port)
@@ -273,8 +267,8 @@ fn main() -> Result<()> {
 
     let mut smoother = Smoother::new();
     let mut last_sent = Instant::now() - Duration::from_secs(1);
-    let mut last_rgb = saved.rgb;
-    let mut last_bright = saved.bright;
+    let mut last_rgb = 0u32;
+    let mut last_bright = 0u32;
     let min_interval = if music {
         Duration::from_millis(40) // 25 Hz
     } else {
@@ -354,12 +348,9 @@ fn main() -> Result<()> {
     }
 
     running.store(false, Ordering::Relaxed);
-    eprintln!(
-        "yeelight-music: restoring bg_power={} bg_rgb={} bg_bright={}",
-        saved.power, saved.rgb, saved.bright
-    );
-    if let Err(e) = lamp.restore(&saved) {
-        eprintln!("yeelight-music: restore failed: {e}");
+    eprintln!("yeelight-music: turning background RGB light off");
+    if let Err(e) = lamp.turn_bg_off() {
+        eprintln!("yeelight-music: bg_set_power off failed: {e}");
     }
     let _ = audio_thread.join();
     Ok(())

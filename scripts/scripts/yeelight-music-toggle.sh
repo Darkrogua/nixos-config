@@ -17,8 +17,9 @@ SENS_MIN=0.2
 SENS_MAX=3.0
 SENS_STEP=0.2
 
-# 7 ступеней яркости (Nerd Font / Maple Mono, md-brightness-1..7)
-ICONS=(󰃞 󰃝 󰃟 󰃠 󰃡 󰃢 󰃣)
+# Ступени уровня: символы блока из Maple Mono (шрифт waybar).
+# Nerd Font (󰃞…) в Maple Mono нет — они подменялись «метлой/кистью».
+ICONS=(▁ ▂ ▃ ▄ ▅ ▆ ▇ █)
 COLOR_ON="#FABD2F"
 COLOR_OFF="#928374"
 
