@@ -67,6 +67,25 @@ in
       color: ${text_color};
     }
 
+    @keyframes screenrec-blink {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0.25;
+      }
+    }
+
+    #custom-screenrec.recording {
+      margin-left: 12px;
+      color: ${red};
+      animation-name: screenrec-blink;
+      animation-duration: 1s;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+      animation-direction: alternate;
+    }
+
     #tray {
       margin-left: 10px;
       margin-right: 5px;

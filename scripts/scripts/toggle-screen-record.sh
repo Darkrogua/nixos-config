@@ -9,6 +9,8 @@ RUNTIME="${XDG_RUNTIME_DIR:-/tmp}"
 PIDFILE="$RUNTIME/toggle-screen-record.pid"
 PATHFILE="$RUNTIME/toggle-screen-record.path"
 LOGFILE="$RUNTIME/toggle-screen-record.log"
+STARTFILE="$RUNTIME/toggle-screen-record.start"
+WAYBAR_SIGNAL=11
 
 notify_msg() {
     local summary="$1"
@@ -55,6 +57,45 @@ file_uri() {
     fi
 }
 
+refresh_waybar() {
+    pkill -RTMIN+"$WAYBAR_SIGNAL" waybar >/dev/null 2>&1 || true
+}
+
+format_elapsed() {
+    local start="$1" now elapsed h m s
+    now="$(date +%s)"
+    elapsed=$((now - start))
+    if (( elapsed < 0 )); then
+        elapsed=0
+    fi
+    if (( elapsed >= 3600 )); then
+        h=$((elapsed / 3600))
+        m=$(((elapsed % 3600) / 60))
+        s=$((elapsed % 60))
+        printf '%d:%02d:%02d' "$h" "$m" "$s"
+    else
+        m=$((elapsed / 60))
+        s=$((elapsed % 60))
+        printf '%02d:%02d' "$m" "$s"
+    fi
+}
+
+print_status() {
+    if ! is_running; then
+        printf '{"text":"","class":"idle","tooltip":""}\n'
+        return 0
+    fi
+    local start="" timer
+    if [[ -f "$STARTFILE" ]]; then
+        start="$(tr -d '[:space:]' <"$STARTFILE" 2>/dev/null || true)"
+    fi
+    if [[ -z "$start" || ! "$start" =~ ^[0-9]+$ ]]; then
+        start="$(stat -c %Y "$PIDFILE" 2>/dev/null || date +%s)"
+    fi
+    timer="$(format_elapsed "$start")"
+    printf '{"text":"● %s","class":"recording","tooltip":"Идёт запись экрана\\nКлик: остановить и сохранить"}\n' "$timer"
+}
+
 is_running() {
     [[ -f "$PIDFILE" ]] || return 1
     local pid
@@ -87,7 +128,8 @@ stop_recording() {
             fi
         done
     fi
-    rm -f "$PIDFILE" "$PATHFILE"
+    rm -f "$PIDFILE" "$PATHFILE" "$STARTFILE"
+    refresh_waybar
 
     if [[ -n "$file" && -s "$file" ]]; then
         if command -v wl-copy >/dev/null 2>&1; then
@@ -131,12 +173,29 @@ start_recording() {
 
     echo "$pid" >"$PIDFILE"
     echo "$file" >"$PATHFILE"
+    date +%s >"$STARTFILE"
+    refresh_waybar
     notify_msg "Запись начата"
 }
 
-if is_running; then
-    stop_recording
-else
-    rm -f "$PIDFILE" "$PATHFILE"
-    start_recording
-fi
+toggle_recording() {
+    if is_running; then
+        stop_recording
+    else
+        rm -f "$PIDFILE" "$PATHFILE" "$STARTFILE"
+        start_recording
+    fi
+}
+
+case "${1:-}" in
+    status)
+        print_status
+        ;;
+    "" | toggle)
+        toggle_recording
+        ;;
+    *)
+        echo "usage: toggle-screen-record [toggle|status]" >&2
+        exit 1
+        ;;
+esac

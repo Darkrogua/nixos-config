@@ -35,6 +35,7 @@ in
     ];
     modules-center = [
       "clock"
+      "custom/screenrec"
     ];
     # NB: избегаем пустых строк (иначе Waybar ругается "Unknown module" / "Item ''")
     modules-right =
@@ -73,6 +74,15 @@ in
       tooltip-format = "<big>{:L%Y %B}</big>\n<tt><small>{calendar}</small></tt>";
       # По клику (alt): "17 января" (без времени)
       format-alt = "{:L%d %B}";
+    };
+
+    "custom/screenrec" = {
+      return-type = "json";
+      exec = "toggle-screen-record status";
+      interval = 1;
+      signal = 11;
+      on-click = "toggle-screen-record";
+      tooltip = true;
     };
 
     "hyprland/workspaces" = {
