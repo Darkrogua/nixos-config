@@ -5,6 +5,7 @@
       { name = "float-imv"; match.class = "^(imv)$"; float = true; }
       { name = "float-mpv"; match.class = "^(mpv)$"; float = true; }
       { name = "float-zenity"; match.class = "^(zenity)$"; float = true; }
+      { name = "float-yeelight-settings"; match.title = "^(Yeelight — подсветка)$"; float = true; size = "520 420"; }
       { name = "float-waypaper"; match.class = "^(waypaper)$"; float = true; }
       { name = "float-soundwire"; match.class = "^(SoundWireServer)$"; float = true; }
       { name = "float-sameboy"; match.class = "^(.sameboy-wrapped)$"; float = true; }

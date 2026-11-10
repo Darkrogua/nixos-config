@@ -39,6 +39,7 @@
         443
         59010
         59011
+        55444 # yeelight-music: лампа подключается обратно (music mode)
       ];
       allowedUDPPorts = [
         59010

@@ -9,6 +9,7 @@
   };
   maple-mono-custom = pkgs.callPackage ./maple-mono { inherit inputs; };
   grok-bot = pkgs.callPackage ./grok-bot { };
+  yeelight-music = pkgs.callPackage ./yeelight-music { };
 
   # Актуальный Cursor из отдельного nixpkgs-cursor (не тащит весь апдейт системы)
   code-cursor =

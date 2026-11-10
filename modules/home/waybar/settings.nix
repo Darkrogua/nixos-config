@@ -45,6 +45,7 @@ in
       ]
       ++ (lib.optional (host == "desktop") "disk")
       ++ [
+        "custom/yeelight-music"
         "pulseaudio"
         "network"
         # "battery"  # Закомментировано: не нужен на десктопе
@@ -183,6 +184,18 @@ in
       exec = "sleep-inhibit status";
       interval = 3;
       on-click = "sleep-inhibit toggle";
+      tooltip = true;
+    };
+    "custom/yeelight-music" = {
+      return-type = "json";
+      exec = "yeelight-music-toggle status";
+      interval = 5;
+      signal = 10;
+      on-click = "yeelight-music-toggle toggle";
+      on-click-right =
+        "hyprctl dispatch 'hl.dsp.exec_cmd(\"yeelight-music-toggle settings\", { float = true, center = true, size = \"520 420\" })'";
+      on-scroll-up = "yeelight-music-toggle up";
+      on-scroll-down = "yeelight-music-toggle down";
       tooltip = true;
     };
     "custom/launcher" = {

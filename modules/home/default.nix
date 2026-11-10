@@ -38,6 +38,7 @@
     ./swaync/swaync.nix               # notification deamon
     ./vscodium                        # vscode fork
     ./waybar                          # status bar
+    ./yeelight-music.nix               # RGB-подсветка лампы под музыку
     ./waypaper.nix                    # GUI wallpaper picker
     ./xdg-mimes.nix                   # xdg config
     ./zsh                             # shell
