@@ -22,7 +22,18 @@
       ];
       connect-timeout = 10;
     };
+
+    # Автоочистка раз в месяц: поколения старше 30 дней удаляются (откат на последний месяц остаётся).
+    gc = {
+      automatic = true;
+      dates = "monthly";
+      persistent = true;
+      options = "--delete-older-than 30d";
+    };
   };
+
+  # Ограничение размера системных логов.
+  services.journald.settings.Journal.SystemMaxUse = "500M";
 
   # Android Debug Bridge (adb) для отладки/прошивки с устройств.
   # В текущей версии NixOS опция `programs.adb` может быть бесполезной,
