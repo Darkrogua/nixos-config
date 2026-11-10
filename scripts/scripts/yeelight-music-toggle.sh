@@ -17,9 +17,10 @@ SENS_MIN=0.2
 SENS_MAX=3.0
 SENS_STEP=0.2
 
-# Ступени уровня: символы блока из Maple Mono (шрифт waybar).
-# Nerd Font (󰃞…) в Maple Mono нет — они подменялись «метлой/кистью».
-ICONS=(▁ ▂ ▃ ▄ ▅ ▆ ▇ █)
+# Круг, заполняющийся по часовой: nf-md-circle-slice-1..8 (U+F0A9E–U+F0AA5).
+# В Maple Mono (шрифт waybar) этих глифов нет — рисуем через Pango
+# font_family='Symbols Nerd Font' (уже установлен в системе).
+ICONS=(󰪞 󰪟 󰪠 󰪡 󰪢 󰪣 󰪤 󰪥)
 COLOR_ON="#FABD2F"
 COLOR_OFF="#928374"
 
@@ -137,7 +138,7 @@ print_status() {
     class="inactive"
     hint="ЛКМ: включить"
   fi
-  printf '{"text":"<span foreground='"'"'%s'"'"'>%s </span>","tooltip":"Подсветка лампы: %s\\nIP: %s\\nЧувствительность: %s\\nПлавность: %s\\n%s\\nПКМ: настройки\\nКолёсико: чувствительность","class":"%s"}\n' \
+  printf '{"text":"<span font_family='"'"'Symbols Nerd Font'"'"' foreground='"'"'%s'"'"'>%s </span>","tooltip":"Подсветка лампы: %s\\nIP: %s\\nЧувствительность: %s\\nПлавность: %s\\n%s\\nПКМ: настройки\\nКолёсико: чувствительность","class":"%s"}\n' \
     "$color" "$icon" "$state" "$ip" "$sens" "$smooth" "$hint" "$class"
 }
 
