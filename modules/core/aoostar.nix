@@ -109,6 +109,8 @@
 
   systemd.services.asterctl-sensor-convert = {
     description = "Convert sensor data format for asterctl";
+    # python3 — fetch-weather.py; gawk — среднее cpu_percent в convert-sensors.sh
+    path = with pkgs; [ python3 gawk gnugrep gnused coreutils bash cacert ];
     serviceConfig = {
       Type = "oneshot";
       User = "${username}";
@@ -116,6 +118,7 @@
       RuntimeDirectory = "asterctl";
       ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p /home/${username}/.cache/asterctl/sensors";
       ExecStart = "${pkgs.bash}/bin/bash /home/${username}/Soft/aoostar-display/convert-sensors.sh";
+      Environment = "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
       # Безопасность
       ProtectHome = false;  # Нужен доступ к домашней директории для записи
       ProtectSystem = "strict";
