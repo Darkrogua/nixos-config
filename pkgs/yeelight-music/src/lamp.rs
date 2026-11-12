@@ -198,6 +198,26 @@ impl Lamp {
         self.set_bg_quota(rgb, bright, duration_ms)
     }
 
+    /// One-shot background colour-flow of up to 9 tuples, then stay at the last frame.
+    /// Each tuple is (duration_ms, rgb, brightness); durations are clamped to ≥ 50 ms.
+    pub fn start_bg_cf(&mut self, frames: &[(u32, u32, u32)]) -> Result<bool> {
+        let Some(expr) = format_cf(frames) else {
+            return Ok(false);
+        };
+        let params = json!([1, 1, expr]);
+        if self.music.is_some() {
+            return self.send_music("bg_start_cf", params);
+        }
+        self.send_quota("bg_start_cf", params)
+    }
+
+    pub fn stop_bg_cf(&mut self) -> Result<bool> {
+        if self.music.is_some() {
+            return self.send_music("bg_stop_cf", json!([]));
+        }
+        self.send_quota("bg_stop_cf", json!([]))
+    }
+
     fn set_bg_music(&mut self, rgb: u32, bright: u32, duration_ms: u32) -> Result<bool> {
         let id = self.alloc_id();
         let dur = duration_ms.max(30);
@@ -554,6 +574,93 @@ impl Lamp {
 
     fn drop_dead_pool(&mut self) {
         // failed I/O removes sockets at the call site
+    }
+
+    fn send_music(&mut self, method: &str, params: Value) -> Result<bool> {
+        let id = self.alloc_id();
+        let payload = json!({"id": id, "method": method, "params": params});
+        if let Some(stream) = self.music.as_mut() {
+            if let Err(e) = write_json(stream, &payload) {
+                eprintln!("yeelight-music: music socket write failed: {e}");
+                self.music = None;
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+
+    fn send_quota(&mut self, method: &str, params: Value) -> Result<bool> {
+        self.drop_dead_pool();
+        if self.pool.is_empty() {
+            match open_stream(&self.ip, self.port) {
+                Ok(stream) => self.pool.push(Pooled {
+                    stream,
+                    quota: Quota::new(),
+                }),
+                Err(e) => return Err(e),
+            }
+        }
+
+        let idx = self
+            .pool
+            .iter_mut()
+            .enumerate()
+            .map(|(i, p)| {
+                p.quota.refill();
+                (i, p.quota.tokens)
+            })
+            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+            .map(|(i, _)| i);
+
+        let Some(idx) = idx else {
+            return Ok(false);
+        };
+        if self.pool[idx].quota.tokens < 1.0 + SHUTDOWN_RESERVE
+            || !self.pool[idx].quota.try_take()
+        {
+            return Ok(false);
+        }
+
+        let id = self.alloc_id();
+        let payload = json!({"id": id, "method": method, "params": params});
+        match rpc_on(&mut self.pool[idx].stream, id, &payload, CMD_TIMEOUT) {
+            Ok(resp) => {
+                if let Some(err) = resp.get("error") {
+                    let msg = err
+                        .get("message")
+                        .and_then(|m| m.as_str())
+                        .unwrap_or("")
+                        .to_string();
+                    if msg.contains("quota") {
+                        self.pool[idx].quota.exhausted();
+                        return Ok(false);
+                    }
+                    eprintln!("yeelight-music: {method} error: {err}");
+                    return Ok(false);
+                }
+                Ok(true)
+            }
+            Err(e) => {
+                eprintln!("yeelight-music: send failed, dropping connection: {e}");
+                self.pool.remove(idx);
+                Ok(false)
+            }
+        }
+    }
+}
+
+fn format_cf(frames: &[(u32, u32, u32)]) -> Option<String> {
+    let mut parts: Vec<String> = Vec::new();
+    for &(dur, rgb, bright) in frames.iter().take(9) {
+        let dur = dur.max(50);
+        let rgb = rgb & 0xFFFFFF;
+        let bright = bright.clamp(1, 100);
+        parts.push(format!("{dur},1,{rgb},{bright}"));
+    }
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join(","))
     }
 }
 

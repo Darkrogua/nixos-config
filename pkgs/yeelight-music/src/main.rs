@@ -5,12 +5,14 @@
 mod audio;
 mod config;
 mod lamp;
+mod rhythm;
 
 use anyhow::{Context, Result};
 use audio::Spectrum;
 use clap::Parser;
-use config::{AppConfig, BrightnessMode};
+use config::{AppConfig, BrightnessMode, EffectMode};
 use lamp::Lamp;
+use rhythm::{Action, RhythmEngine};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
@@ -75,6 +77,14 @@ struct Args {
     #[arg(long, value_name = "bass|off")]
     brightness_mode: Option<String>,
 
+    /// Эффект: classic — как обычно; rhythm — предсказание бита
+    #[arg(long, value_name = "classic|rhythm")]
+    effect_mode: Option<String>,
+
+    /// На сколько миллисекунд раньше слать цепочку в режиме rhythm (пик на доле)
+    #[arg(long)]
+    latency_ms: Option<u32>,
+
     /// Путь к config.toml (по умолчанию ~/.config/yeelight-music/config.toml)
     #[arg(long)]
     config: Option<PathBuf>,
@@ -108,6 +118,12 @@ fn apply_cli(mut cfg: AppConfig, args: &Args) -> AppConfig {
     }
     if let Some(v) = &args.brightness_mode {
         cfg.brightness_mode = BrightnessMode::parse(v);
+    }
+    if let Some(v) = &args.effect_mode {
+        cfg.effect_mode = EffectMode::parse(v);
+    }
+    if let Some(v) = args.latency_ms {
+        cfg.latency_ms = v;
     }
     cfg.clamp();
     cfg
@@ -305,6 +321,54 @@ fn stopped() -> bool {
     STOP.load(Ordering::Relaxed)
 }
 
+fn try_set_bg(
+    lamp: &mut Lamp,
+    rgb: u32,
+    bright: u32,
+    duration_ms: u32,
+    min_interval: Duration,
+    last_sent: &mut Instant,
+    last_rgb: &mut u32,
+    last_bright: &mut u32,
+) {
+    let due = last_sent.elapsed() >= min_interval;
+    let changed = rgb != *last_rgb || bright != *last_bright;
+    if due && (changed || last_sent.elapsed() >= Duration::from_millis(1500)) {
+        match lamp.set_bg(rgb, bright, duration_ms) {
+            Ok(true) => {
+                *last_sent = Instant::now();
+                *last_rgb = rgb;
+                *last_bright = bright;
+            }
+            Ok(false) => {}
+            Err(e) => {
+                eprintln!("yeelight-music: set_bg error: {e}");
+                thread::sleep(Duration::from_millis(200));
+            }
+        }
+    }
+}
+
+fn send_chain(
+    lamp: &mut Lamp,
+    rhythm: &mut RhythmEngine,
+    frames: Vec<(u32, u32, u32)>,
+    restarted: bool,
+    last_sent: &mut Instant,
+) {
+    match lamp.start_bg_cf(&frames) {
+        Ok(true) => {
+            rhythm.mark_sent(Instant::now(), &frames, restarted);
+            *last_sent = Instant::now();
+        }
+        Ok(false) => {}
+        Err(e) => {
+            eprintln!("yeelight-music: start_bg_cf error: {e}");
+            thread::sleep(Duration::from_millis(200));
+        }
+    }
+}
+
 /// Retry until the lamp/Wi-Fi is reachable, or until SIGTERM/SIGINT.
 fn connect_with_retry(ip: &str, port: u16, max_wait: Option<Duration>) -> Result<Lamp> {
     let mut delay = Duration::from_secs(1);
@@ -377,12 +441,14 @@ fn main() -> Result<()> {
     let mut cfg = apply_cli(file_cfg, &args);
     let mut last_mtime = config::mtime(&config_path);
     eprintln!(
-        "yeelight-music: config {} (ip={} sensitivity={} smoothness={} brightness_mode={})",
+        "yeelight-music: config {} (ip={} sensitivity={} smoothness={} brightness_mode={} effect_mode={} latency_ms={})",
         config_path.display(),
         cfg.ip,
         cfg.sensitivity,
         cfg.smoothness,
-        cfg.brightness_mode.as_str()
+        cfg.brightness_mode.as_str(),
+        cfg.effect_mode.as_str(),
+        cfg.latency_ms
     );
 
     if args.off {
@@ -434,6 +500,7 @@ fn main() -> Result<()> {
         .context("spawn audio thread")?;
 
     let mut smoother = Smoother::new();
+    let mut rhythm = RhythmEngine::new();
     let mut last_sent = Instant::now() - Duration::from_secs(1);
     let mut last_rgb = 0u32;
     let mut last_bright = 0u32;
@@ -485,17 +552,29 @@ fn main() -> Result<()> {
                     if (new_cfg.sensitivity - cfg.sensitivity).abs() > f32::EPSILON
                         || (new_cfg.smoothness - cfg.smoothness).abs() > f32::EPSILON
                         || new_cfg.brightness_mode != cfg.brightness_mode
+                        || new_cfg.effect_mode != cfg.effect_mode
+                        || new_cfg.latency_ms != cfg.latency_ms
                     {
                         eprintln!(
-                            "yeelight-music: reloaded sensitivity={} smoothness={} brightness_mode={}",
+                            "yeelight-music: reloaded sensitivity={} smoothness={} brightness_mode={} effect_mode={} latency_ms={}",
                             new_cfg.sensitivity,
                             new_cfg.smoothness,
-                            new_cfg.brightness_mode.as_str()
+                            new_cfg.brightness_mode.as_str(),
+                            new_cfg.effect_mode.as_str(),
+                            new_cfg.latency_ms
                         );
+                    }
+                    if new_cfg.effect_mode != cfg.effect_mode {
+                        if cfg.effect_mode == EffectMode::Rhythm {
+                            let _ = lamp.stop_bg_cf();
+                        }
+                        rhythm = RhythmEngine::new();
                     }
                     cfg.sensitivity = new_cfg.sensitivity;
                     cfg.smoothness = new_cfg.smoothness;
                     cfg.brightness_mode = new_cfg.brightness_mode;
+                    cfg.effect_mode = new_cfg.effect_mode;
+                    cfg.latency_ms = new_cfg.latency_ms;
                 }
                 Err(e) => eprintln!("yeelight-music: config reload failed: {e}"),
             }
@@ -503,23 +582,70 @@ fn main() -> Result<()> {
 
         let (rgb, bright) = smoother.update(latest, cfg.sensitivity, cfg.smoothness, cfg.brightness_mode);
         let duration_ms = transition_ms(music, cfg.smoothness);
-        let due = last_sent.elapsed() >= min_interval;
-        let changed = rgb != last_rgb || bright != last_bright;
-        if due && (changed || last_sent.elapsed() >= Duration::from_millis(1500)) {
-            match lamp.set_bg(rgb, bright, duration_ms) {
-                Ok(true) => {
-                    last_sent = Instant::now();
-                    last_rgb = rgb;
-                    last_bright = bright;
+
+        if cfg.effect_mode == EffectMode::Rhythm {
+            let now = Instant::now();
+            rhythm.update(now, &latest);
+            let action = rhythm.poll(
+                now,
+                cfg.sensitivity,
+                cfg.smoothness,
+                cfg.brightness_mode,
+                Duration::from_millis(cfg.latency_ms as u64),
+            );
+            match action {
+                Action::Hold => {}
+                Action::Fallback => {
+                    try_set_bg(
+                        &mut lamp,
+                        rgb,
+                        bright,
+                        duration_ms,
+                        min_interval,
+                        &mut last_sent,
+                        &mut last_rgb,
+                        &mut last_bright,
+                    );
                 }
-                Ok(false) => {
-                    // Quota or transient skip; retry on the next frame.
+                Action::StopAndFallback => {
+                    match lamp.stop_bg_cf() {
+                        Ok(true) => last_sent = Instant::now(),
+                        Ok(false) => {}
+                        Err(e) => eprintln!("yeelight-music: bg_stop_cf error: {e}"),
+                    }
+                    try_set_bg(
+                        &mut lamp,
+                        rgb,
+                        bright,
+                        duration_ms,
+                        min_interval,
+                        &mut last_sent,
+                        &mut last_rgb,
+                        &mut last_bright,
+                    );
                 }
-                Err(e) => {
-                    eprintln!("yeelight-music: set_bg error: {e}");
-                    thread::sleep(Duration::from_millis(200));
+                Action::StartCf(frames) => {
+                    send_chain(&mut lamp, &mut rhythm, frames, false, &mut last_sent);
+                }
+                Action::RestartCf(frames) => {
+                    match lamp.stop_bg_cf() {
+                        Ok(_) => {}
+                        Err(e) => eprintln!("yeelight-music: bg_stop_cf error: {e}"),
+                    }
+                    send_chain(&mut lamp, &mut rhythm, frames, true, &mut last_sent);
                 }
             }
+        } else {
+            try_set_bg(
+                &mut lamp,
+                rgb,
+                bright,
+                duration_ms,
+                min_interval,
+                &mut last_sent,
+                &mut last_rgb,
+                &mut last_bright,
+            );
         }
     }
 

@@ -22,6 +22,8 @@ pub struct Spectrum {
     /// Low-frequency kick energy (~30–150 Hz) used to drive brightness.
     pub kick: f32,
     pub rms: f32,
+    /// Bass-weighted half-wave spectral flux (~30–400 Hz).
+    pub flux: f32,
 }
 
 pub fn default_sink_monitor() -> Result<String> {
@@ -131,6 +133,8 @@ pub fn capture_loop(running: Arc<AtomicBool>, tx: Sender<Spectrum>) {
     let bytes_per_read = hop * CHANNELS as usize * 2;
     let mut raw = vec![0u8; bytes_per_read];
     let mut scratch = vec![Complex::new(0.0, 0.0); FFT_SIZE];
+    let mut prev_mag = vec![0.0f32; FFT_SIZE / 2];
+    let mut flux_ready = false;
     let mut last_resolve = std::time::Instant::now();
 
     while running.load(Ordering::Relaxed) {
@@ -183,7 +187,15 @@ pub fn capture_loop(running: Arc<AtomicBool>, tx: Sender<Spectrum>) {
             let mid = band_energy(&scratch, 180.0, 2000.0);
             let treble = band_energy(&scratch, 2000.0, 8000.0);
             let kick = band_energy(&scratch, 30.0, 150.0);
-            if tx.send(Spectrum { bass, mid, treble, kick, rms }).is_err() {
+            let flux = if flux_ready {
+                bass_weighted_flux(&scratch, &mut prev_mag)
+            } else {
+                // Prime previous magnitudes so the first frame is not a fake onset.
+                let _ = bass_weighted_flux(&scratch, &mut prev_mag);
+                flux_ready = true;
+                0.0
+            };
+            if tx.send(Spectrum { bass, mid, treble, kick, rms, flux }).is_err() {
                 return;
             }
             mono.drain(..hop);
@@ -205,4 +217,23 @@ fn band_energy(bins: &[Complex<f32>], lo_hz: f32, hi_hz: f32) -> f32 {
         e += bin.norm_sqr();
     }
     e
+}
+
+fn bass_weighted_flux(bins: &[Complex<f32>], prev: &mut [f32]) -> f32 {
+    let n = FFT_SIZE;
+    let to_bin = |hz: f32| {
+        ((hz * n as f32 / SAMPLE_RATE as f32).round() as usize).clamp(1, n / 2 - 1)
+    };
+    let a = to_bin(30.0);
+    let b = to_bin(400.0).max(a);
+    let mut flux = 0.0f32;
+    for i in a..=b {
+        let mag = bins[i].norm();
+        let hz = i as f32 * SAMPLE_RATE as f32 / n as f32;
+        // Tilt toward the kick: ~4× at 30 Hz, ~1× at 200 Hz, 0.25× at 400 Hz.
+        let w = (200.0 / hz.max(30.0)).clamp(0.25, 4.0);
+        flux += w * (mag - prev[i]).max(0.0);
+        prev[i] = mag;
+    }
+    flux
 }

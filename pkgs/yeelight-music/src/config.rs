@@ -37,6 +37,55 @@ impl BrightnessMode {
     }
 }
 
+/// Visualiser algorithm. `Classic` is the original colour+bass-brightness loop.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EffectMode {
+    Classic,
+    /// Beat detection + pre-scheduled colour-flow pulses.
+    Rhythm,
+}
+
+impl EffectMode {
+    pub fn parse(s: &str) -> Self {
+        let t = s.trim().to_lowercase();
+        // Accept Russian GUI labels too (punctuation is stripped).
+        let compact: String = t
+            .chars()
+            .filter(|c| c.is_alphanumeric())
+            .collect();
+        if compact.contains("rhythm")
+            || compact.contains("beat")
+            || compact.contains("ритм")
+            || compact.contains("предсказан")
+        {
+            Self::Rhythm
+        } else {
+            Self::Classic
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Classic => "classic",
+            Self::Rhythm => "rhythm",
+        }
+    }
+
+    pub fn label_ru(self) -> &'static str {
+        match self {
+            Self::Classic => "классика",
+            Self::Rhythm => "ритм (предсказание бита)",
+        }
+    }
+
+    pub fn combo_ru(self) -> &'static str {
+        match self {
+            Self::Classic => "Классика",
+            Self::Rhythm => "Ритм (предсказание бита)",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct AppConfig {
     pub ip: String,
@@ -47,6 +96,9 @@ pub struct AppConfig {
     pub smoothness: f32,
     pub connections: usize,
     pub brightness_mode: BrightnessMode,
+    pub effect_mode: EffectMode,
+    /// Send colour-flow chains this early so pulse peaks land on the beat.
+    pub latency_ms: u32,
 }
 
 impl Default for AppConfig {
@@ -60,6 +112,8 @@ impl Default for AppConfig {
             smoothness: 1.0,
             connections: 2,
             brightness_mode: BrightnessMode::Bass,
+            effect_mode: EffectMode::Classic,
+            latency_ms: 120,
         }
     }
 }
@@ -69,6 +123,7 @@ impl AppConfig {
         self.sensitivity = self.sensitivity.clamp(0.2, 3.0);
         self.smoothness = self.smoothness.clamp(0.2, 2.5);
         self.connections = self.connections.clamp(1, 2);
+        self.latency_ms = self.latency_ms.clamp(0, 400);
         if self.ip.trim().is_empty() {
             self.ip = Self::default().ip;
         }
@@ -124,6 +179,8 @@ pub fn load(path: &Path) -> Result<AppConfig> {
             "smoothness" => cfg.smoothness = val.parse().unwrap_or(cfg.smoothness),
             "connections" => cfg.connections = val.parse().unwrap_or(cfg.connections),
             "brightness_mode" => cfg.brightness_mode = BrightnessMode::parse(val),
+            "effect_mode" => cfg.effect_mode = EffectMode::parse(val),
+            "latency_ms" => cfg.latency_ms = val.parse().unwrap_or(cfg.latency_ms),
             _ => {}
         }
     }
@@ -138,8 +195,8 @@ pub fn save(path: &Path, cfg: &AppConfig) -> Result<()> {
     let mut c = cfg.clone();
     c.clamp();
     let body = format!(
-        "# ~/.config/yeelight-music/config.toml\nip = \"{}\"\nport = {}\nmusic_port = {}\nbind = \"{}\"\nsensitivity = {:.1}\nsmoothness = {:.1}\nconnections = {}\n# brightness_mode: bass — яркость дышит под низкие частоты; off — как раньше (общая громкость)\nbrightness_mode = \"{}\"\n",
-        c.ip, c.port, c.music_port, c.bind, c.sensitivity, c.smoothness, c.connections, c.brightness_mode.as_str()
+        "# ~/.config/yeelight-music/config.toml\nip = \"{}\"\nport = {}\nmusic_port = {}\nbind = \"{}\"\nsensitivity = {:.1}\nsmoothness = {:.1}\nconnections = {}\n# brightness_mode: bass — яркость дышит под низкие частоты; off — как раньше (общая громкость)\nbrightness_mode = \"{}\"\n# effect_mode: classic — как обычно; rhythm — предсказание бита и цепочки bg_start_cf\n# В режиме rhythm пульсы яркости работают только если brightness_mode = bass\neffect_mode = \"{}\"\n# latency_ms: на сколько раньше слать цепочку, чтобы пик попал в долю (50–400)\nlatency_ms = {}\n",
+        c.ip, c.port, c.music_port, c.bind, c.sensitivity, c.smoothness, c.connections, c.brightness_mode.as_str(), c.effect_mode.as_str(), c.latency_ms
     );
     let tmp = path.with_extension("toml.tmp");
     fs::write(&tmp, body).with_context(|| format!("write {}", tmp.display()))?;
