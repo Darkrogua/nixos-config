@@ -19,6 +19,8 @@ pub struct Spectrum {
     pub bass: f32,
     pub mid: f32,
     pub treble: f32,
+    /// Low-frequency kick energy (~30–150 Hz) used to drive brightness.
+    pub kick: f32,
     pub rms: f32,
 }
 
@@ -180,7 +182,8 @@ pub fn capture_loop(running: Arc<AtomicBool>, tx: Sender<Spectrum>) {
             let bass = band_energy(&scratch, 30.0, 180.0);
             let mid = band_energy(&scratch, 180.0, 2000.0);
             let treble = band_energy(&scratch, 2000.0, 8000.0);
-            if tx.send(Spectrum { bass, mid, treble, rms }).is_err() {
+            let kick = band_energy(&scratch, 30.0, 150.0);
+            if tx.send(Spectrum { bass, mid, treble, kick, rms }).is_err() {
                 return;
             }
             mono.drain(..hop);

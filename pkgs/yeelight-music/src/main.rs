@@ -9,7 +9,7 @@ mod lamp;
 use anyhow::{Context, Result};
 use audio::Spectrum;
 use clap::Parser;
-use config::AppConfig;
+use config::{AppConfig, BrightnessMode};
 use lamp::Lamp;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -71,6 +71,10 @@ struct Args {
     #[arg(long)]
     connections: Option<usize>,
 
+    /// Яркость: bass — под низкие частоты; off — как раньше (общая громкость)
+    #[arg(long, value_name = "bass|off")]
+    brightness_mode: Option<String>,
+
     /// Путь к config.toml (по умолчанию ~/.config/yeelight-music/config.toml)
     #[arg(long)]
     config: Option<PathBuf>,
@@ -102,6 +106,9 @@ fn apply_cli(mut cfg: AppConfig, args: &Args) -> AppConfig {
     if let Some(v) = args.connections {
         cfg.connections = v;
     }
+    if let Some(v) = &args.brightness_mode {
+        cfg.brightness_mode = BrightnessMode::parse(v);
+    }
     cfg.clamp();
     cfg
 }
@@ -112,6 +119,8 @@ struct Smoother {
     energy: f32,
     beat: f32,
     prev_bass: f32,
+    bass_peak: f32,
+    bass_hold: f32,
 }
 
 impl Smoother {
@@ -122,13 +131,20 @@ impl Smoother {
             energy: 0.0,
             beat: 0.0,
             prev_bass: 0.0,
+            bass_peak: 0.0,
+            bass_hold: 0.0,
         }
     }
 
-    fn update(&mut self, sp: Spectrum, sensitivity: f32, smoothness: f32) -> (u32, u32) {
+    fn update(
+        &mut self,
+        sp: Spectrum,
+        sensitivity: f32,
+        smoothness: f32,
+        brightness_mode: BrightnessMode,
+    ) -> (u32, u32) {
         let sm = smoothness.clamp(0.2, 2.5);
         let hue_alpha = (0.28 / sm).clamp(0.08, 0.6);
-        let energy_alpha = (0.32 / sm).clamp(0.1, 0.6);
 
         // Contrast-enhanced band energies so the dominant range wins the hue.
         let bass = emphasize(sp.bass);
@@ -148,6 +164,20 @@ impl Smoother {
         self.hue = lerp_hue(self.hue, target_hue, hue_alpha);
         self.sat = ema(self.sat, 0.95, 0.2);
 
+        let bright = match brightness_mode {
+            BrightnessMode::Bass => self.brightness_from_bass(sp, sensitivity, smoothness),
+            BrightnessMode::Off => self.brightness_from_level(sp, sensitivity, smoothness),
+        };
+        let rgb = hsv_to_rgb(self.hue, self.sat);
+        (rgb, bright)
+    }
+
+    /// Previous behaviour: overall loudness plus a little bass-onset punch.
+    fn brightness_from_level(&mut self, sp: Spectrum, sensitivity: f32, smoothness: f32) -> u32 {
+        let sm = smoothness.clamp(0.2, 2.5);
+        let energy_alpha = (0.32 / sm).clamp(0.1, 0.6);
+        let bass = emphasize(sp.bass);
+
         // RMS of a full-scale sine is ~0.7; music is quieter. 12× at
         // sensitivity=1 puts typical listening levels around mid-high brightness
         // without instantly pegging at 100.
@@ -162,9 +192,60 @@ impl Smoother {
 
         let loud = (self.energy * 0.88 + self.beat * 0.28).clamp(0.0, 1.0);
         // Never turn the backlight off; dim it on silence.
-        let bright = (4.0 + loud * 96.0).round().clamp(1.0, 100.0) as u32;
-        let rgb = hsv_to_rgb(self.hue, self.sat);
-        (rgb, bright)
+        (4.0 + loud * 96.0).round().clamp(1.0, 100.0) as u32
+    }
+
+    /// Brightness follows ~30–150 Hz kick energy, with auto-gain and peak-hold.
+    /// Colour+brightness are sent together in one lamp command by the caller.
+    fn brightness_from_bass(&mut self, sp: Spectrum, sensitivity: f32, smoothness: f32) -> u32 {
+        let sm = smoothness.clamp(0.2, 2.5);
+        // Amplitude-like units; raw FFT power has a huge dynamic range.
+        let raw = sp.kick.max(0.0).sqrt();
+
+        if raw > self.bass_peak {
+            self.bass_peak = if self.bass_peak < 1e-8 {
+                raw
+            } else {
+                ema(self.bass_peak, raw, 0.35)
+            };
+        } else if self.bass_peak > 1e-8 {
+            // ~15–20 s time constant at ~40 ms frames, so quiet tracks still reach full range.
+            self.bass_peak = ema(self.bass_peak, raw, 0.003);
+        }
+
+        let norm = if self.bass_peak > 1e-8 {
+            (raw / self.bass_peak).clamp(0.0, 1.5)
+        } else {
+            0.0
+        };
+        // Gate residual noise relative to the recent peak.
+        let gated = if self.bass_peak > 1e-8 && raw < 0.06 * self.bass_peak {
+            0.0
+        } else {
+            (norm / (1.0 + 0.25 * norm)).min(1.0)
+        };
+
+        if gated > self.bass_hold {
+            self.bass_hold = gated;
+        } else {
+            let silent = sp.rms < 0.008 && gated < 0.02;
+            let decay = if silent {
+                0.12
+            } else {
+                (0.08 / sm).clamp(0.03, 0.2)
+            };
+            self.bass_hold = ema(self.bass_hold, gated, decay);
+        }
+
+        const FLOOR: f32 = 8.0;
+        // Scroll intensity (sensitivity) sets how much of the 8–100 range kicks can use.
+        let t = ((sensitivity - 0.2) / 2.8).clamp(0.0, 1.0);
+        let max_b = 55.0 + 45.0 * t;
+        let gamma = (1.3 - 0.5 * t).clamp(0.7, 1.3);
+        let loud = self.bass_hold.clamp(0.0, 1.0).powf(gamma);
+        (FLOOR + loud * (max_b - FLOOR))
+            .round()
+            .clamp(FLOOR, 100.0) as u32
     }
 }
 
@@ -296,11 +377,12 @@ fn main() -> Result<()> {
     let mut cfg = apply_cli(file_cfg, &args);
     let mut last_mtime = config::mtime(&config_path);
     eprintln!(
-        "yeelight-music: config {} (ip={} sensitivity={} smoothness={})",
+        "yeelight-music: config {} (ip={} sensitivity={} smoothness={} brightness_mode={})",
         config_path.display(),
         cfg.ip,
         cfg.sensitivity,
-        cfg.smoothness
+        cfg.smoothness,
+        cfg.brightness_mode.as_str()
     );
 
     if args.off {
@@ -402,20 +484,24 @@ fn main() -> Result<()> {
                     let new_cfg = apply_cli(loaded, &args);
                     if (new_cfg.sensitivity - cfg.sensitivity).abs() > f32::EPSILON
                         || (new_cfg.smoothness - cfg.smoothness).abs() > f32::EPSILON
+                        || new_cfg.brightness_mode != cfg.brightness_mode
                     {
                         eprintln!(
-                            "yeelight-music: reloaded sensitivity={} smoothness={}",
-                            new_cfg.sensitivity, new_cfg.smoothness
+                            "yeelight-music: reloaded sensitivity={} smoothness={} brightness_mode={}",
+                            new_cfg.sensitivity,
+                            new_cfg.smoothness,
+                            new_cfg.brightness_mode.as_str()
                         );
                     }
                     cfg.sensitivity = new_cfg.sensitivity;
                     cfg.smoothness = new_cfg.smoothness;
+                    cfg.brightness_mode = new_cfg.brightness_mode;
                 }
                 Err(e) => eprintln!("yeelight-music: config reload failed: {e}"),
             }
         }
 
-        let (rgb, bright) = smoother.update(latest, cfg.sensitivity, cfg.smoothness);
+        let (rgb, bright) = smoother.update(latest, cfg.sensitivity, cfg.smoothness, cfg.brightness_mode);
         let duration_ms = transition_ms(music, cfg.smoothness);
         let due = last_sent.elapsed() >= min_interval;
         let changed = rgb != last_rgb || bright != last_bright;

@@ -5,6 +5,38 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
+/// How the rear RGB brightness is driven.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BrightnessMode {
+    /// Colour still follows the music; brightness stays fixed (mapped from sensitivity).
+    Off,
+    /// Brightness follows low-frequency (kick/bass) energy.
+    Bass,
+}
+
+impl BrightnessMode {
+    pub fn parse(s: &str) -> Self {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "off" | "fixed" | "false" | "0" | "нет" => Self::Off,
+            _ => Self::Bass,
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Off => "off",
+            Self::Bass => "bass",
+        }
+    }
+
+    pub fn label_ru(self) -> &'static str {
+        match self {
+            Self::Off => "выкл",
+            Self::Bass => "под бас",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct AppConfig {
     pub ip: String,
@@ -14,6 +46,7 @@ pub struct AppConfig {
     pub sensitivity: f32,
     pub smoothness: f32,
     pub connections: usize,
+    pub brightness_mode: BrightnessMode,
 }
 
 impl Default for AppConfig {
@@ -26,6 +59,7 @@ impl Default for AppConfig {
             sensitivity: 1.0,
             smoothness: 1.0,
             connections: 2,
+            brightness_mode: BrightnessMode::Bass,
         }
     }
 }
@@ -89,6 +123,7 @@ pub fn load(path: &Path) -> Result<AppConfig> {
             "sensitivity" => cfg.sensitivity = val.parse().unwrap_or(cfg.sensitivity),
             "smoothness" => cfg.smoothness = val.parse().unwrap_or(cfg.smoothness),
             "connections" => cfg.connections = val.parse().unwrap_or(cfg.connections),
+            "brightness_mode" => cfg.brightness_mode = BrightnessMode::parse(val),
             _ => {}
         }
     }
@@ -103,8 +138,8 @@ pub fn save(path: &Path, cfg: &AppConfig) -> Result<()> {
     let mut c = cfg.clone();
     c.clamp();
     let body = format!(
-        "# ~/.config/yeelight-music/config.toml\nip = \"{}\"\nport = {}\nmusic_port = {}\nbind = \"{}\"\nsensitivity = {:.1}\nsmoothness = {:.1}\nconnections = {}\n",
-        c.ip, c.port, c.music_port, c.bind, c.sensitivity, c.smoothness, c.connections
+        "# ~/.config/yeelight-music/config.toml\nip = \"{}\"\nport = {}\nmusic_port = {}\nbind = \"{}\"\nsensitivity = {:.1}\nsmoothness = {:.1}\nconnections = {}\n# brightness_mode: bass — яркость дышит под низкие частоты; off — как раньше (общая громкость)\nbrightness_mode = \"{}\"\n",
+        c.ip, c.port, c.music_port, c.bind, c.sensitivity, c.smoothness, c.connections, c.brightness_mode.as_str()
     );
     let tmp = path.with_extension("toml.tmp");
     fs::write(&tmp, body).with_context(|| format!("write {}", tmp.display()))?;
