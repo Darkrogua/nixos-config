@@ -27,7 +27,28 @@ wait_monitors() {
   return 1
 }
 
+# Подсветка Yeelight: гасим RGB до сна, пока Wi-Fi ещё жив (на PrepareForSleep
+# NetworkManager сразу рвёт Wi-Fi, поэтому системный хук был бы уже поздно).
+# Остановка службы = штатное выключение фона (on→off). После сна включаем
+# обратно, только если она работала до этого.
+YEELIGHT_MARK="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/yeelight-music.paused-for-sleep"
+
+yeelight_off() {
+  if systemctl --user is-active --quiet yeelight-music.service; then
+    touch "$YEELIGHT_MARK"
+    timeout 10 systemctl --user stop yeelight-music.service || true
+  fi
+}
+
+yeelight_on() {
+  if [ -e "$YEELIGHT_MARK" ]; then
+    rm -f "$YEELIGHT_MARK"
+    systemctl --user start --no-block yeelight-music.service || true
+  fi
+}
+
 prepare() {
+  yeelight_off
   loginctl lock-session
   wait_hyprlock || true
 }
@@ -45,6 +66,7 @@ resume() {
   sleep 0.2
 
   loginctl lock-session
+  yeelight_on
 }
 
 case "${1:-}" in

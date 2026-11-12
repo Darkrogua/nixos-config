@@ -26,10 +26,10 @@ in
     }
 
     # После 15 минут уходим в сон.
-    # Lock перед suspend — before_sleep_cmd / lock_cmd.
+    # hypr-sleep prepare заранее: гасит Yeelight, пока Wi-Fi жив, и блокирует экран.
     listener {
       timeout = 900
-      on-timeout = systemctl suspend
+      on-timeout = sh -c 'hypr-sleep prepare; systemctl suspend'
     }
   '';
 
