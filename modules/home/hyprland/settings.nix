@@ -41,6 +41,12 @@
         };
       };
 
+      # Монитор SAC G7c II умеет HDR: при полноэкранном видео Hyprland сам
+      # переключал его в HDR (чёрный экран на пару секунд, потом блеклая картинка).
+      render = {
+        cm_auto_hdr = 0;
+      };
+
       misc = {
         disable_hyprland_logo = true;
         disable_splash_rendering = true;
